@@ -1,0 +1,34 @@
+# Minimal .gitignore for SOAR <-> Wazuh integration
+# Ignore environment files
+.env
+
+# Ignore logs
+logs/
+shared_logs/
+*.log
+
+# n8n logs
+n8n_data/*.log
+n8n_data/*.journal
+
+# n8n config (contains sensitive encryption keys)
+n8n_data/config
+n8n_data/config.*
+
+# Ignore private SSL certificate directories
+config/wazuh_indexer_ssl_certs/
+wazuh_indexer_ssl_certs/
+
+# Optional: editor/OS cruft
+.DS_Store
+.vscode/
+__pycache__/
+
+# Wazuh integrations system files
+config/wazuh_integrations/pagerduty
+config/wazuh_integrations/shuffle
+config/wazuh_integrations/shuffle.py
+config/wazuh_integrations/slack
+config/wazuh_integrations/slack.py
+config/wazuh_integrations/virustotal
+config/wazuh_integrations/virustotal.py

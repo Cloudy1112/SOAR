@@ -20,62 +20,13 @@
   BRUTE FORCE ATTACKS - MITRE T1110
 -->
 <group name="local,brute_force,mitre_attack,t1110">
-  <!-- Correct Frequency Rule Example -->
-  <!--
-  <rule id="100101" level="10" frequency="8" timeframe="300">
-    <if_matched_sid>5716</if_matched_sid>
-    <same_source_ip />
-    <same_user />
-    <description>T1110.001 Password Guessing: Multiple failed logins for the same user from the same IP.</description>
+  <rule id="100500" level="12" frequency="10" timeframe="120">
+    <if_matched_sid>5758</if_matched_sid>
+    <same_srcip />
+    <description>SSH Bruteforce confirmed from same IP</description>
     <mitre>
       <id>T1110.001</id>
     </mitre>
   </rule>
-  -->
 
-  <!-- Simplified Frequency Rules (if they rely on a single base rule) -->
-  <rule id="100103" level="11" frequency="15" timeframe="600">
-    <if_matched_sid>5716</if_matched_sid>
-    <same_source_ip />
-    <different_user />
-    <description>T1110.003 Password Spraying: Multiple failed logins across different users from the same IP.</description>
-    <mitre>
-      <id>T1110.003</id>
-    </mitre>
-  </rule>
-
-  <rule id="100105" level="12" frequency="50" timeframe="60">
-    <if_matched_sid>5716</if_matched_sid>
-    <same_source_ip />
-    <description>T1110.004 Credential Stuffing: High velocity of login failures (possible automated stuffing attack).</description>
-    <mitre>
-      <id>T1110.004</id>
-    </mitre>
-  </rule>
-
-  <!--
-  NOTE: Rules that aggregate all authentication_failed events from any source
-  (like 100110, 100111) are complex. They require all base rules for failed
-  authentication to inherit from a single parent rule (e.g., 5716). This is a
-  manual process and is beyond the scope of a simple fix.
-  -->
-
-  <rule id="100104" level="12">
-    <if_group>sysmon_event1</if_group>
-    <match>(?i)hashcat\.exe|john\.exe|mimikatz\.exe|hydra\.exe</match>
-    <description>T1110.002 Password Cracking: Execution of known password cracking tools detected.</description>
-    <mitre>
-      <id>T1110.002</id>
-    </mitre>
-  </rule>
-
-  <rule id="100106" level="14" timeframe="600">
-    <if_matched_sid>5715</if_matched_sid>
-    <if_matched_sid>100101,100103,100105</if_matched_sid>
-    <same_source_ip />
-    <description>T1110 Brute Force ESCALATION: Successful login after multiple brute force/spraying attempts! Possible compromise.</description>
-    <mitre>
-      <id>T1110</id>
-    </mitre>
-  </rule>
 </group>

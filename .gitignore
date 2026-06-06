@@ -15,6 +15,9 @@ n8n_data/*.journal
 n8n_data/config
 n8n_data/config.*
 
+# n8n storage
+n8n_data/storage
+
 # Ignore private SSL certificate directories
 config/wazuh_indexer_ssl_certs/
 wazuh_indexer_ssl_certs/

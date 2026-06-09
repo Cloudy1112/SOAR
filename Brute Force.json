@@ -10,8 +10,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -352,
-        32
+        -128,
+        16
       ],
       "id": "3f07281d-167b-4471-a1a8-d0c47c50a29e",
       "name": "Webhook",
@@ -31,38 +31,20 @@
                 },
                 "conditions": [
                   {
-                    "id": "8eeaa1c8-2c8a-42a0-8f64-94e7f5ad7bfa",
-                    "leftValue": "={{ ['T1110', 'T1101.001', 'T1101.002', 'T1101.003'].some(val => $json.body.mitre.id.some(actualId => actualId.includes(val))) }}",
-                    "rightValue": "=true",
+                    "leftValue": "={{ $('Set Brute Force Method').item.json.attack_method",
+                    "rightValue": "SSH on Linux",
                     "operator": {
-                      "type": "boolean",
-                      "operation": "true",
-                      "singleValue": true
-                    }
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "f8175ac5-ae16-403d-9aad-93a86564e163"
                   }
                 ],
                 "combinator": "and"
               },
               "renameOutput": true,
-              "outputKey": "Brute force"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.4,
-      "position": [
-        -176,
-        32
-      ],
-      "id": "766ed94d-a85d-4afa-ba8e-0743b15c7276",
-      "name": "Mitre"
-    },
-    {
-      "parameters": {
-        "rules": {
-          "values": [
+              "outputKey": "SSH Linux"
+            },
             {
               "conditions": {
                 "options": {
@@ -73,20 +55,43 @@
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ $('Webhook').item.json.body.process.includes('ssh') }}",
-                    "rightValue": "\"SSH\"",
+                    "id": "7303c116-f4e9-4fb1-bc86-71796b6caee0",
+                    "leftValue": "={{ $('Set Brute Force Method').item.json.attack_method",
+                    "rightValue": "SSH on Windows",
                     "operator": {
-                      "type": "boolean",
-                      "operation": "true",
-                      "singleValue": true
-                    },
-                    "id": "f8175ac5-ae16-403d-9aad-93a86564e163"
+                      "type": "string",
+                      "operation": "equals"
+                    }
                   }
                 ],
                 "combinator": "and"
               },
               "renameOutput": true,
-              "outputKey": "SSH"
+              "outputKey": "SSH Windows"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "e3b646bf-14d5-4e74-afdc-9e2f5c1bc8f7",
+                    "leftValue": "={{ $('Set Brute Force Method').item.json.attack_method",
+                    "rightValue": "RDP on Windows",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "RDP Windows"
             }
           ]
         },
@@ -97,8 +102,8 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        0,
-        32
+        944,
+        -336
       ],
       "id": "0b8f6abc-f079-4e09-b1d0-0d694411dff2",
       "name": "Protocol"
@@ -112,7 +117,7 @@
           "mode": "list",
           "cachedResultName": "chonglevan2004"
         },
-        "message": "=🛑 *Brute Force SSH Alert*\n• *Time stamp:* {{ $('Webhook').item.json.body.timestamp }}\n• *Rule ID:* {{ $('Webhook').item.json.body.rule_id }} (Level {{ $('Webhook').item.json.body.rule_level }})\n• *Agent Name:* {{ $('Webhook').item.json.body.agent_name }}\n• *Agent IP:* {{ $('Webhook').item.json.body.agent_ip }}\n• *Attacker IP:* *{{ $('Webhook').item.json.body.attacker_ip }}*\n• *Description:* _{{ $('Webhook').item.json.body.rule_description }}_\n\n⚡ *MITRE ATT&CK Info:*\n> *ID:* {{ $('Webhook').item.json.body.mitre.id }}\n> *Tactic:* {{ $('Webhook').item.json.body.mitre.tactic }}\n> *Technique:* {{ $('Webhook').item.json.body.mitre.technique }}\n",
+        "message": "=🛑 *Brute Force {{ $('Set Brute Force Method').item.json.attack_method }} Alert*\n• *Time stamp:* {{ $('Webhook').item.json.body.timestamp }}\n• *Rule ID:* {{ $('Webhook').item.json.body.rule_id }} (Level {{ $('Webhook').item.json.body.rule_level }})\n• *Agent Name:* {{ $('Webhook').item.json.body.agent_name }}\n• *Agent IP:* {{ $('Webhook').item.json.body.agent_ip }}\n• *Attacker IP:* *{{ $('Webhook').item.json.body.attacker_ip }}*\n• *Description:* _{{ $('Webhook').item.json.body.rule_description }}_\n\n⚡ *MITRE ATT&CK Info:*\n> *ID:* {{ $('Webhook').item.json.body.mitre.id }}\n> *Tactic:* {{ $('Webhook').item.json.body.mitre.tactic }}\n> *Technique:* {{ $('Webhook').item.json.body.mitre.technique }}",
         "responseType": "customForm",
         "formFields": {
           "values": [
@@ -145,8 +150,8 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.4,
       "position": [
-        544,
-        112
+        560,
+        32
       ],
       "id": "1991725f-86fb-4abd-a659-0a33a40fa1df",
       "name": "Send message and wait for Block/ Ignore",
@@ -174,7 +179,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        960,
+        800,
         -112
       ],
       "id": "9dd0a86a-f38a-4991-b29c-a81d89766c8b",
@@ -187,50 +192,7 @@
           "name": "Unnamed credential"
         }
       },
-      "onError": "continueErrorOutput",
       "notes": "Failed in obtaining a JWT token"
-    },
-    {
-      "parameters": {
-        "method": "PUT",
-        "url": "https://192.168.1.250:55000/active-response",
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "agents_list",
-              "value": "={{ $('Webhook').item.json.body.agent_id }}"
-            }
-          ]
-        },
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $json.data.token }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"command\": \"!firewall-drop\",\n  \"alert\": {\n    \"data\": {\n      \"srcip\": \"{{ $('Webhook').item.json.body.attacker_ip }}\"\n    }\n  }\n}",
-        "options": {
-          "allowUnauthorizedCerts": true
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        1200,
-        -160
-      ],
-      "id": "6e2077da-a278-415a-b53d-49e9155365aa",
-      "name": "Block Firewall",
-      "retryOnFail": false,
-      "notesInFlow": true,
-      "onError": "continueErrorOutput",
-      "notes": "Failed in sending API to wazuh manager to active-response"
     },
     {
       "parameters": {
@@ -292,8 +254,8 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        1360,
-        -176
+        1440,
+        -448
       ],
       "id": "c470457f-f9ab-49d2-957e-ca099c4009ce",
       "name": "Status Active Response"
@@ -313,8 +275,8 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.4,
       "position": [
-        1616,
-        48
+        1680,
+        -256
       ],
       "id": "510dbe79-5c42-4b54-8f05-3447ae040b79",
       "name": "Send Error AR",
@@ -362,8 +324,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        176,
-        32
+        208,
+        16
       ],
       "id": "e0c8f595-dd26-41cd-a314-4d1b829ee49f",
       "name": "Check AbuseIPDB",
@@ -464,8 +426,8 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        336,
-        16
+        368,
+        -112
       ],
       "id": "cd083dc5-e79a-4eb0-ba3a-fbd8dc864802",
       "name": "Switch"
@@ -479,7 +441,7 @@
           "mode": "list",
           "cachedResultName": "chonglevan2004"
         },
-        "message": "=⚠️ INFO: IP BLOCK IGNORED ⚠️\nBrute Force activity was detected, but the Active Response block action was bypassed for this IP address.\n🖥️ Target Asset Details:\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID: {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP: {{ $('Webhook').item.json.body.agent_ip }}\nℹ️ Action Details:\n    Ignored IP: {{ $('Webhook').item.json.body.attacker_ip }}\n    Action: Bypassed / Ignored",
+        "message": "=⚠️ INFO: IP BLOCK IGNORED ⚠️\nBrute Force {{ $('Set Brute Force Method').item.json.body.attack_method }} activity was detected, but the Active Response block action was bypassed for this IP address.\n🖥️ Target Asset Details:\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID: {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP: {{ $('Webhook').item.json.body.agent_ip }}\nℹ️ Action Details:\n    Ignored IP: {{ $('Webhook').item.json.body.attacker_ip }}\n    Action: Bypassed / Ignored",
         "responseType": "freeText",
         "options": {
           "responseFormTitle": "Reason",
@@ -489,8 +451,8 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.4,
       "position": [
-        1040,
-        240
+        896,
+        256
       ],
       "id": "71bea30c-6f49-4660-b440-a4901c245cb8",
       "name": "Ignore message & Write Reason Ignore",
@@ -512,14 +474,14 @@
           "mode": "list",
           "cachedResultName": "chonglevan2004"
         },
-        "text": "=🛑 *Brute Force SSH Alert* \n  • *Time stamp:* {{ $json.body.timestamp }} \n  • *Rule ID:* {{ $json.body.rule_id }} (Level {{ $json.body.rule_level }}) \n  • *Agent Name:* {{ $json.body.agent_name }} \n  • *Agent IP:* {{ $json.body.agent_ip }} \n  • *Attacker IP:* *{{ $json.body.attacker_ip }}* \n  • *Description:* _{{ $json.body.rule_description }}_  \n⚡ *MITRE ATT&CK Info:* \n  > *ID:* {{ $json.body.mitre.id }} \n  > *Tactic:* {{ $json.body.mitre.tactic }} \n  > *Technique:* {{ $json.body.mitre.technique }}",
+        "text": "=🛑 *Brute Force {{ $('Set Brute Force Method').item.json.attack_method }} Alert* \n  • *Time stamp:* {{ $('Webhook').item.json.body.timestamp }} \n  • *Rule ID:* {{ $('Webhook').item.json.body.rule_id }} (Level {{ $('Webhook').item.json.body.rule_level }}) \n  • *Agent Name:* {{ $('Webhook').item.json.body.agent_name }} \n  • *Agent IP:* {{ $('Webhook').item.json.body.agent_ip }} \n  • *Attacker IP:* *{{ $('Webhook').item.json.body.attacker_ip }}* \n  • *Description:* _{{ $('Webhook').item.json.body.rule_description }}_  \n⚡ *MITRE ATT&CK Info:* \n  > *ID:* {{ $('Webhook').item.json.body.mitre.id }} \n  > *Tactic:* {{ $('Webhook').item.json.body.mitre.tactic }} \n  > *Technique:* {{ $('Webhook').item.json.body.mitre.technique }}",
         "otherOptions": {}
       },
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.4,
       "position": [
         528,
-        -96
+        -272
       ],
       "id": "621264a0-a483-4543-8eb6-7948acaa270d",
       "name": "Send Alert block automation",
@@ -617,8 +579,8 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        832,
-        144
+        672,
+        208
       ],
       "id": "272513a5-3eed-4280-a84b-aa4c33f5c630",
       "name": "Block/Ignore BF SSH"
@@ -632,14 +594,14 @@
           "mode": "list",
           "cachedResultName": "chonglevan2004"
         },
-        "text": "=🚨 SECURITY ALERT: MALICIOUS IP BLOCKED 🚨\nWazuh Active Response has successfully blocked an IP address due to suspected Brute Force activity.\n🖥️ Target Asset Details:\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID: {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP: {{ $('Webhook').item.json.body.agent_ip }}  \n🛡️ Action Taken:\n    Blocked IP (Attacker): {{ $('Webhook').item.json.body.attacker_ip }}\n    Status: firewall-drop executed successfully.",
+        "text": "=🚨 SECURITY ALERT: MALICIOUS IP BLOCKED 🚨\nWazuh Active Response has successfully blocked an IP address due to suspected Brute Force {{ $('Set Brute Force Method').item.json.body.attack_method }} activity.\n🖥️ Target Asset Details:\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID: {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP: {{ $('Webhook').item.json.body.agent_ip }}  \n🛡️ Action Taken:\n    Blocked IP (Attacker): {{ $('Webhook').item.json.body.attacker_ip }}\n    Status: firewall-drop executed successfully.",
         "otherOptions": {}
       },
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.4,
       "position": [
-        1600,
-        -192
+        1680,
+        -432
       ],
       "id": "d818b057-0222-4a2f-870a-bdd24b610919",
       "name": "Send a message blocked successfully",
@@ -654,61 +616,100 @@
     },
     {
       "parameters": {
-        "select": "user",
-        "user": {
-          "__rl": true,
-          "value": "U0B5SS5GMFC",
-          "mode": "list",
-          "cachedResultName": "chonglevan2004"
-        },
-        "text": "=🚨 ERROR: Failed in obtaining a JWT token 🚨  \n🖥️ Target Asset Details:\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID:   {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP:   {{ $('Webhook').item.json.body.agent_ip }}\n    - IP (Attacker): {{ $('Webhook').item.json.body.attacker_ip }}    ",
-        "otherOptions": {}
+        "jsCode": "const logonType = $input.first().json.body.protocol;\nlet method = \"SSH on Linux\";\n\nif (logonType === \"8\") {\n    method = \"SSH Windows\";\n} else if (logonType === \"3\" || logonType === \"10\") {\n    method = \"RDP Windows\";\n}\n\nreturn {\n    attack_method: method\n};"
       },
-      "type": "n8n-nodes-base.slack",
-      "typeVersion": 2.4,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        1072,
-        64
+        48,
+        16
       ],
-      "id": "8b2d4a9a-ddd0-49bb-bda4-f2fc10d343a5",
-      "name": "Send Error JWT",
-      "webhookId": "2b13bd11-75cd-4207-bf09-4275039aaf58",
-      "notesInFlow": true,
-      "credentials": {
-        "slackApi": {
-          "id": "e108rF57buEMAqFO",
-          "name": "Slack account"
-        }
-      }
+      "id": "66157c08-5257-4e98-8a44-d2cd9c57af4e",
+      "name": "Set Brute Force Method"
     },
     {
       "parameters": {
-        "select": "user",
-        "user": {
-          "__rl": true,
-          "value": "U0B5SS5GMFC",
-          "mode": "list",
-          "cachedResultName": "chonglevan2004"
+        "method": "PUT",
+        "url": "https://192.168.1.250:55000/active-response",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "agents_list",
+              "value": "={{ $('Webhook').item.json.body.agent_id }}"
+            }
+          ]
         },
-        "text": "=🚨 ERROR: Failed in sending API to wazuh manager to active-response 🚨  \n🖥️ Target Asset Details:\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID:   {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP:   {{ $('Webhook').item.json.body.agent_ip }}\n    - IP (Attacker): {{ $('Webhook').item.json.body.attacker_ip }}    ",
-        "otherOptions": {}
-      },
-      "type": "n8n-nodes-base.slack",
-      "typeVersion": 2.4,
-      "position": [
-        1360,
-        64
-      ],
-      "id": "d2c6f656-926b-43c6-b45e-05855e4b48b1",
-      "name": "Send Error Active-response",
-      "webhookId": "2b13bd11-75cd-4207-bf09-4275039aaf58",
-      "notesInFlow": true,
-      "credentials": {
-        "slackApi": {
-          "id": "e108rF57buEMAqFO",
-          "name": "Slack account"
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('obtain a JWT token in order to run any endpoint').item.json.data.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"command\": \"!firewall-drop\",\n  \"alert\": {\n    \"data\": {\n      \"srcip\": \"{{ $('Webhook').item.json.body.attacker_ip }}\"\n    }\n  }\n}",
+        "options": {
+          "allowUnauthorizedCerts": true
         }
-      }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1200,
+        -464
+      ],
+      "id": "6e2077da-a278-415a-b53d-49e9155365aa",
+      "name": "Block Firewall Linux",
+      "retryOnFail": false,
+      "notesInFlow": true,
+      "waitBetweenTries": 5000,
+      "notes": "Failed in sending API to wazuh manager to active-response"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "https://192.168.1.250:55000/active-response",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "agents_list",
+              "value": "={{ $('Webhook').item.json.body.agent_id }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('obtain a JWT token in order to run any endpoint').item.json.data.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"command\": \"!netsh.exe\",\n  \"alert\": {\n    \"data\": {\n      \"srcip\": \"{{ $('Webhook').item.json.body.attacker_ip }}\"\n    }\n  }\n}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1200,
+        -240
+      ],
+      "id": "c8a19721-595a-4860-a7e6-2e3033f59da8",
+      "name": "Block Firewall Windows",
+      "retryOnFail": false,
+      "notesInFlow": true,
+      "waitBetweenTries": 5000,
+      "notes": "Failed in sending API to wazuh manager to active-response"
     }
   ],
   "pinData": {},
@@ -717,18 +718,7 @@
       "main": [
         [
           {
-            "node": "Mitre",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mitre": {
-      "main": [
-        [
-          {
-            "node": "Protocol",
+            "node": "Set Brute Force Method",
             "type": "main",
             "index": 0
           }
@@ -739,7 +729,21 @@
       "main": [
         [
           {
-            "node": "Check AbuseIPDB",
+            "node": "Block Firewall Linux",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Block Firewall Windows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Block Firewall Windows",
             "type": "main",
             "index": 0
           }
@@ -768,36 +772,12 @@
       "main": [
         [
           {
-            "node": "Block Firewall",
+            "node": "Protocol",
             "type": "main",
             "index": 0
           }
         ],
-        [
-          {
-            "node": "Send Error JWT",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Block Firewall": {
-      "main": [
-        [
-          {
-            "node": "Status Active Response",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Send Error Active-response",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Status Active Response": {
@@ -826,6 +806,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Send message and wait for Block/ Ignore",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -843,21 +830,11 @@
             "node": "Send message and wait for Block/ Ignore",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "obtain a JWT token in order to run any endpoint",
-            "type": "main",
-            "index": 0
           }
         ],
         [
           {
             "node": "Send message and wait for Block/ Ignore",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "obtain a JWT token in order to run any endpoint",
             "type": "main",
             "index": 0
           }
@@ -911,6 +888,41 @@
       "main": [
         []
       ]
+    },
+    "Set Brute Force Method": {
+      "main": [
+        [
+          {
+            "node": "Check AbuseIPDB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Block Firewall Linux": {
+      "main": [
+        [
+          {
+            "node": "Status Active Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Block Firewall Windows": {
+      "main": [
+        [
+          {
+            "node": "Status Active Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
     }
   },
   "active": true,
@@ -918,7 +930,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "159c2693-37ab-49a5-a3dd-f2c1ab9ba6bb",
+  "versionId": "fca1aa4f-2419-45b1-b54f-02e3b34350b9",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "e88a23548c008081d07deacd3ca2d9cc4b8fdf8979a7f8fb7bbb7ddbfcf1d253"

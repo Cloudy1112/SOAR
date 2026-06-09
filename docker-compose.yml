@@ -49,6 +49,7 @@ services:
       - ./config/wazuh_etc/sensitive-username.txt:/wazuh-config-mount/etc/lists/sensitive-username.txt # <-- Mount file sensitive username from host into container
       - ./config/wazuh_cluster/wazuh_manager.conf:/wazuh-config-mount/etc/ossec.conf # <-- Mount file ossec.conf cluster from host into container
       - ./config/wazuh_integrations/custom-n8n-brute-force.py:/wazuh-config-mount/integrations/custom-n8n-brute-force.py # <-- Mount file custom-n8n.py from host into container
+      - ./config/wazuh_integrations/custom-n8n.py:/wazuh-config-mount/integrations/custom-n8n.py
       #- ./config/wazuh_etc/agent.conf:/wazuh-config-mount/etc/shared/default/agent.conf # <-- Mount file agent.conf from host into container
       - ./shared_logs:/shared_logs # <-- Mount log chung
     networks:

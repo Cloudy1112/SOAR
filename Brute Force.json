@@ -441,7 +441,7 @@
           "mode": "list",
           "cachedResultName": "chonglevan2004"
         },
-        "message": "=⚠️ INFO: IP BLOCK IGNORED ⚠️\nBrute Force {{ $('Set Brute Force Method').item.json.body.attack_method }} activity was detected, but the Active Response block action was bypassed for this IP address.\n🖥️ Target Asset Details:\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID: {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP: {{ $('Webhook').item.json.body.agent_ip }}\nℹ️ Action Details:\n    Ignored IP: {{ $('Webhook').item.json.body.attacker_ip }}\n    Action: Bypassed / Ignored",
+        "message": "=⚠️ INFO: IP BLOCK IGNORED ⚠️\nBrute Force {{ $('Set Brute Force Method').item.json.attack_method }} activity was detected, but the Active Response block action was bypassed for this IP address.\n🖥️ Target Asset Details:\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID: {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP: {{ $('Webhook').item.json.body.agent_ip }}\nℹ️ Action Details:\n    Ignored IP: {{ $('Webhook').item.json.body.attacker_ip }}\n    Action: Bypassed / Ignored",
         "responseType": "freeText",
         "options": {
           "responseFormTitle": "Reason",
@@ -594,7 +594,7 @@
           "mode": "list",
           "cachedResultName": "chonglevan2004"
         },
-        "text": "=🚨 SECURITY ALERT: MALICIOUS IP BLOCKED 🚨\nWazuh Active Response has successfully blocked an IP address due to suspected Brute Force {{ $('Set Brute Force Method').item.json.body.attack_method }} activity.\n🖥️ Target Asset Details:\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID: {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP: {{ $('Webhook').item.json.body.agent_ip }}  \n🛡️ Action Taken:\n    Blocked IP (Attacker): {{ $('Webhook').item.json.body.attacker_ip }}\n    Status: firewall-drop executed successfully.",
+        "text": "=🚨 SECURITY ALERT: MALICIOUS IP BLOCKED 🚨\nWazuh Active Response has successfully blocked an IP address due to suspected Brute Force {{ $('Set Brute Force Method').item.json.attack_method }} activity.\n🖥️ Target Asset Details:\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID: {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP: {{ $('Webhook').item.json.body.agent_ip }}  \n🛡️ Action Taken:\n    Blocked IP (Attacker): {{ $('Webhook').item.json.body.attacker_ip }}\n    Status: firewall-drop executed successfully.",
         "otherOptions": {}
       },
       "type": "n8n-nodes-base.slack",
@@ -616,7 +616,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const logonType = $input.first().json.body.protocol;\nlet method = \"SSH on Linux\";\n\nif (logonType === \"8\") {\n    method = \"SSH Windows\";\n} else if (logonType === \"3\" || logonType === \"10\") {\n    method = \"RDP Windows\";\n}\n\nreturn {\n    attack_method: method\n};"
+        "jsCode": "const logonType = $input.first().json.body.logon_type;\nlet method = \"SSH on Linux\";\n\nif (logonType === \"8\") {\n    method = \"SSH on Windows\";\n} else if (logonType === \"3\" || logonType === \"10\") {\n    method = \"RDP on Windows\";\n}\n\nreturn {\n    attack_method: method\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -659,7 +659,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1200,
+        1184,
         -464
       ],
       "id": "6e2077da-a278-415a-b53d-49e9155365aa",
@@ -693,7 +693,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"command\": \"!netsh.exe\",\n  \"alert\": {\n    \"data\": {\n      \"srcip\": \"{{ $('Webhook').item.json.body.attacker_ip }}\"\n    }\n  }\n}",
+        "jsonBody": "={\n  \"command\": \"!netsh\",\n  \"alert\": {\n    \"data\": {\n      \"srcip\": \"{{ $('Webhook').item.json.body.attacker_ip }}\"\n    }\n  }\n}",
         "options": {
           "allowUnauthorizedCerts": true
         }
@@ -930,7 +930,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "fca1aa4f-2419-45b1-b54f-02e3b34350b9",
+  "versionId": "89a10736-54c6-481e-850a-a6f7ab8a36f2",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "e88a23548c008081d07deacd3ca2d9cc4b8fdf8979a7f8fb7bbb7ddbfcf1d253"

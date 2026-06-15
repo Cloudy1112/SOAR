@@ -4,16 +4,16 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "wazuh-alert",
+        "path": "wazuh-alert/brute-force",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -128,
-        16
+        -1312,
+        480
       ],
-      "id": "3f07281d-167b-4471-a1a8-d0c47c50a29e",
+      "id": "767319f6-71f0-4133-85f0-e44764d122b9",
       "name": "Webhook",
       "webhookId": "a5e23221-369a-4e57-9398-20046ff27003"
     },
@@ -102,10 +102,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        944,
-        -336
+        -240,
+        128
       ],
-      "id": "0b8f6abc-f079-4e09-b1d0-0d694411dff2",
+      "id": "fb379e7c-2931-44ef-85bd-9d4a2dacf198",
       "name": "Protocol"
     },
     {
@@ -150,17 +150,17 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.4,
       "position": [
-        560,
-        32
+        -624,
+        496
       ],
-      "id": "1991725f-86fb-4abd-a659-0a33a40fa1df",
+      "id": "e8938632-4b91-41c7-ae60-9ecc08237312",
       "name": "Send message and wait for Block/ Ignore",
       "webhookId": "665ff421-4e2b-4d60-8278-5522b36f4b99",
       "notesInFlow": true,
       "alwaysOutputData": false,
       "credentials": {
         "slackApi": {
-          "id": "e108rF57buEMAqFO",
+          "id": "YjSeZK8u0BxB7ZBO",
           "name": "Slack account"
         }
       },
@@ -179,16 +179,16 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        800,
-        -112
+        -384,
+        352
       ],
-      "id": "9dd0a86a-f38a-4991-b29c-a81d89766c8b",
+      "id": "77beadd5-3760-4c67-a9a5-1224eb73b6da",
       "name": "obtain a JWT token in order to run any endpoint",
       "notesInFlow": true,
       "retryOnFail": false,
       "credentials": {
         "httpBasicAuth": {
-          "id": "mk5sjonFe9oY5t3U",
+          "id": "2OFmrkR49Z7UQR3g",
           "name": "Unnamed credential"
         }
       },
@@ -254,10 +254,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        1440,
-        -448
+        256,
+        16
       ],
-      "id": "c470457f-f9ab-49d2-957e-ca099c4009ce",
+      "id": "43c20441-b891-4bc5-8cad-e0811cf461bf",
       "name": "Status Active Response"
     },
     {
@@ -275,16 +275,16 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.4,
       "position": [
-        1680,
-        -256
+        496,
+        208
       ],
-      "id": "510dbe79-5c42-4b54-8f05-3447ae040b79",
+      "id": "ab0a1382-d2c9-4cf4-ae94-da168f4d216e",
       "name": "Send Error AR",
       "webhookId": "2b13bd11-75cd-4207-bf09-4275039aaf58",
       "notesInFlow": true,
       "credentials": {
         "slackApi": {
-          "id": "e108rF57buEMAqFO",
+          "id": "YjSeZK8u0BxB7ZBO",
           "name": "Slack account"
         }
       }
@@ -324,20 +324,16 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        208,
-        16
+        -976,
+        480
       ],
-      "id": "e0c8f595-dd26-41cd-a314-4d1b829ee49f",
+      "id": "ba87f890-b593-4093-bd13-347f22d046a7",
       "name": "Check AbuseIPDB",
       "retryOnFail": true,
       "credentials": {
-        "httpBasicAuth": {
-          "id": "mk5sjonFe9oY5t3U",
-          "name": "Unnamed credential"
-        },
         "httpHeaderAuth": {
-          "id": "AHi293wq3XyKvnd8",
-          "name": "AbuseIPDB API Key"
+          "id": "NDnkJnaS0TgVZ1Mk",
+          "name": "Header Auth account"
         }
       },
       "onError": "continueErrorOutput"
@@ -426,10 +422,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        368,
-        -112
+        -816,
+        352
       ],
-      "id": "cd083dc5-e79a-4eb0-ba3a-fbd8dc864802",
+      "id": "7c4f4c86-c321-4884-854b-d2358885a66d",
       "name": "Switch"
     },
     {
@@ -451,16 +447,16 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.4,
       "position": [
-        896,
-        256
+        -288,
+        720
       ],
-      "id": "71bea30c-6f49-4660-b440-a4901c245cb8",
+      "id": "7faf877c-8fd8-4962-9f05-90d3247d9cea",
       "name": "Ignore message & Write Reason Ignore",
       "webhookId": "f9f29a64-f1b4-4378-9aab-46e45e7a3374",
       "notesInFlow": true,
       "credentials": {
         "slackApi": {
-          "id": "e108rF57buEMAqFO",
+          "id": "YjSeZK8u0BxB7ZBO",
           "name": "Slack account"
         }
       }
@@ -480,16 +476,16 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.4,
       "position": [
-        528,
-        -272
+        -656,
+        192
       ],
-      "id": "621264a0-a483-4543-8eb6-7948acaa270d",
+      "id": "c98468a7-9931-4f9a-b57c-f98eb2b89240",
       "name": "Send Alert block automation",
       "webhookId": "95c0bbd7-0d19-4ffb-a198-7e26fd40b9ed",
       "notesInFlow": true,
       "credentials": {
         "slackApi": {
-          "id": "e108rF57buEMAqFO",
+          "id": "YjSeZK8u0BxB7ZBO",
           "name": "Slack account"
         }
       },
@@ -579,10 +575,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        672,
-        208
+        -512,
+        672
       ],
-      "id": "272513a5-3eed-4280-a84b-aa4c33f5c630",
+      "id": "ccb02889-5b0e-4bf1-b775-2170b5ba6f71",
       "name": "Block/Ignore BF SSH"
     },
     {
@@ -600,16 +596,16 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.4,
       "position": [
-        1680,
-        -432
+        496,
+        32
       ],
-      "id": "d818b057-0222-4a2f-870a-bdd24b610919",
+      "id": "e895602f-0429-4261-a960-0bae76851dae",
       "name": "Send a message blocked successfully",
       "webhookId": "2b13bd11-75cd-4207-bf09-4275039aaf58",
       "notesInFlow": true,
       "credentials": {
         "slackApi": {
-          "id": "e108rF57buEMAqFO",
+          "id": "YjSeZK8u0BxB7ZBO",
           "name": "Slack account"
         }
       }
@@ -621,10 +617,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        48,
-        16
+        -1136,
+        480
       ],
-      "id": "66157c08-5257-4e98-8a44-d2cd9c57af4e",
+      "id": "f8ee98a2-4d8e-482c-ac11-c2976a1be7e0",
       "name": "Set Brute Force Method"
     },
     {
@@ -659,10 +655,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1184,
-        -464
+        0,
+        0
       ],
-      "id": "6e2077da-a278-415a-b53d-49e9155365aa",
+      "id": "eac79d1d-71bb-462c-8c1b-cbc448006c21",
       "name": "Block Firewall Linux",
       "retryOnFail": false,
       "notesInFlow": true,
@@ -701,10 +697,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1200,
-        -240
+        16,
+        224
       ],
-      "id": "c8a19721-595a-4860-a7e6-2e3033f59da8",
+      "id": "15375db5-c4ce-444f-9af5-5e116af7cc0c",
       "name": "Block Firewall Windows",
       "retryOnFail": false,
       "notesInFlow": true,
@@ -776,8 +772,7 @@
             "type": "main",
             "index": 0
           }
-        ],
-        []
+        ]
       ]
     },
     "Status Active Response": {
@@ -884,11 +879,6 @@
         ]
       ]
     },
-    "Send a message blocked successfully": {
-      "main": [
-        []
-      ]
-    },
     "Set Brute Force Method": {
       "main": [
         [
@@ -908,8 +898,7 @@
             "type": "main",
             "index": 0
           }
-        ],
-        []
+        ]
       ]
     },
     "Block Firewall Windows": {
@@ -920,8 +909,7 @@
             "type": "main",
             "index": 0
           }
-        ],
-        []
+        ]
       ]
     }
   },
@@ -930,11 +918,11 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "89a10736-54c6-481e-850a-a6f7ab8a36f2",
+  "versionId": "423c5f2d-c7b1-48c7-b84d-ee7b6e141313",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "e88a23548c008081d07deacd3ca2d9cc4b8fdf8979a7f8fb7bbb7ddbfcf1d253"
   },
-  "id": "WoJYIMKWUVNHNaxa",
+  "id": "0aLLRzxR56CtQXht",
   "tags": []
 }

@@ -11,8 +11,7 @@ def main():
     # Đọc toàn bộ dữ liệu đầu vào từ Wazuh
     data = json.load(sys.stdin)
     
-    # Lấy webhook URL từ thẻ <hook_url> ở trên
-    webhook_url = "http://192.168.1.250:5678/webhook/your-webhook-id"
+   
     
     # Gửi cảnh báo đến n8n
     try:

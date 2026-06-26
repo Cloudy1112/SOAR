@@ -1,0 +1,48 @@
+<!--
+  Playbook 5 - Các block cần thêm vào ossec.conf của Wazuh Manager
+  (trong wazuh-docker: file config/wazuh_cluster/wazuh_manager.conf)
+  Đặt các block này bên trong <ossec_config>...</ossec_config>
+-->
+
+<!-- ============ INTEGRATION: đẩy alert sang n8n ============ -->
+<!--
+  Lưu ý: integration custom-n8n dùng chung với các playbook khác,
+  lọc theo <level>3</level>. Script custom-n8n có logic routing:
+  rule 100520/100530 -> webhook /data-leak, còn lại -> /wazuh-alert.
+  Xem file custom-n8n trong thư mục wazuh-integrations.
+-->
+<integration>
+  <name>custom-n8n</name>
+  <level>3</level>
+  <alert_format>json</alert_format>
+</integration>
+
+
+<!-- ============ ACTIVE RESPONSE: kill browser ============ -->
+
+<command>
+  <name>kill-browser-linux</name>
+  <executable>kill-browser-linux</executable>
+  <timeout_allowed>no</timeout_allowed>
+</command>
+
+<command>
+  <name>kill-browser-windows</name>
+  <executable>kill-browser-windows.exe</executable>
+  <timeout_allowed>no</timeout_allowed>
+</command>
+
+<!--
+  Không khai báo <rules_id> để Active Response KHÔNG tự động chạy khi
+  rule phát hiện. Phản ứng chỉ được kích hoạt thủ công qua Wazuh API
+  sau khi quản trị viên phê duyệt (mô hình human-in-the-loop).
+-->
+<active-response>
+  <command>kill-browser-linux</command>
+  <location>local</location>
+</active-response>
+
+<active-response>
+  <command>kill-browser-windows</command>
+  <location>local</location>
+</active-response>

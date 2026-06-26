@@ -1,0 +1,550 @@
+{
+  "name": "Playbook5",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "data-leak",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -464,
+        0
+      ],
+      "id": "42d05c9b-0001-4a2b-be5d-923a611d9395",
+      "name": "Webhook",
+      "webhookId": "721bcbb6-922a-459b-b296-93879330bc45"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.rule.id }}",
+                    "rightValue": "100520",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "9432856e-9040-43e7-97aa-53283fd74b98"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Linux"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "7194678c-84c7-4584-bc4d-6715226ae8ef",
+                    "leftValue": "={{ $json.body.rule.id }}",
+                    "rightValue": "100530",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Windows"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -288,
+        0
+      ],
+      "id": "63f3a0a3-4374-4450-9d41-2a651711e751",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $json.body;\nconst a = b.data?.audit ?? {};\n\n// Lay file name: uu tien data.audit.file.name, fallback regex tu full_log\nlet file = a.file?.name;\nif (!file) {\n  const m = (b.full_log || \"\").match(/name=\"([^\"]+)\"/);\n  file = m ? m[1] : \"N/A\";\n}\n\n// Lay exe (tien trinh)\nlet proc = a.exe;\nif (!proc) {\n  const m = (b.full_log || \"\").match(/exe=\"([^\"]+)\"/);\n  proc = m ? m[1] : \"N/A\";\n}\n\n// User\n// User: thu nhieu nguon\nlet user = a.uid ?? a.auid ?? a.euid;\nif (!user || user === \"unknown\") {\n  // fallback: regex AUID=\"...\" tu full_log (ten user dang chu)\n  const m = (b.full_log || \"\").match(/AUID=\"([^\"]+)\"/);\n  user = m ? m[1] : \"unknown\";\n}\n\nreturn {\n  os: \"Linux\",\n  agent: b.agent?.name ?? \"N/A\",\n  agentId: b.agent?.id,\n  agentIp: b.agent?.ip ?? \"N/A\",\n  user: user,\n  file: file,\n  process: proc,\n  ruleId: b.rule?.id,\n  ruleDesc: b.rule?.description,\n  time: b.timestamp\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        -96
+      ],
+      "id": "cc34d474-da4b-45a8-a3e6-ed775b25ab94",
+      "name": "Code for Linux"
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $json.body;\nconst e = b.data?.win?.eventdata ?? {};\n\nconst clean = (s) => (s ?? \"N/A\").replace(/\\\\\\\\/g, \"\\\\\");\n\nreturn {\n  os: \"Windows\",\n  agent: b.agent?.name ?? \"N/A\",\n  agentIp: b.agent?.ip ?? \"N/A\",\n  agentId: b.agent?.id,\n  user: e.subjectUserName ?? \"unknown\",\n  file: clean(e.objectName),\n  process: clean(e.processName),\n  ruleId: b.rule?.id,\n  ruleDesc: b.rule?.description,\n  time: b.timestamp\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        96
+      ],
+      "id": "30f02da2-5f95-47d9-81bf-08938970cf53",
+      "name": "Code for Windows"
+    },
+    {
+      "parameters": {
+        "chatId": "8928212956",
+        "text": "=🚨 CẢNH BÁO RÒ RỈ DỮ LIỆU 🚨\n\nHệ điều hành: {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.os : $('Code for Windows').item.json.os }}\nMáy: {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.agent : $('Code for Windows').item.json.agent }} ({{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.agentIp : $('Code for Windows').item.json.agentIp }})\nNgười dùng: {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.user : $('Code for Windows').item.json.user }}\nTiến trình: {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.process : $('Code for Windows').item.json.process }}\nTệp truy cập: {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.file : $('Code for Windows').item.json.file }}\nMức độ: Cao (Rule {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.ruleId : $('Code for Windows').item.json.ruleId }})\nThời gian: {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.time : $('Code for Windows').item.json.time }}\n\n🔗 Duyệt xử lý tại: {{ $execution.resumeFormUrl }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        0
+      ],
+      "id": "e1615608-df52-4415-a3a0-68f83e5a61be",
+      "name": "Send a text message",
+      "webhookId": "80030454-abcb-48f0-acda-d78c83c76fab",
+      "credentials": {
+        "telegramApi": {
+          "id": "BcSBhf72msBepYR4",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "project": {
+          "__rl": true,
+          "value": "10000",
+          "mode": "list",
+          "cachedResultName": "SOAR"
+        },
+        "issueType": {
+          "__rl": true,
+          "value": "10003",
+          "mode": "list",
+          "cachedResultName": "Task"
+        },
+        "summary": "=[Data Leak] {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.os : $('Code for Windows').item.json.os }} - {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.user : $('Code for Windows').item.json.user }}@{{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.agent : $('Code for Windows').item.json.agent }}",
+        "additionalFields": {
+          "description": "=Phát hiện nghi ngờ rò rỉ dữ liệu nhạy cảm.\n\n- Hệ điều hành: {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.os : $('Code for Windows').item.json.os }}\n- Máy: {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.agent : $('Code for Windows').item.json.agent }} ({{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.agentIp : $('Code for Windows').item.json.agentIp }})\n- Người dùng: {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.user : $('Code for Windows').item.json.user }}\n- Tiến trình: {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.process : $('Code for Windows').item.json.process }}\n- Tệp truy cập: {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.file : $('Code for Windows').item.json.file }}\n- Rule: {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.ruleId : $('Code for Windows').item.json.ruleId }} - {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.ruleDesc : $('Code for Windows').item.json.ruleDesc }}\n- Thời gian: {{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.time : $('Code for Windows').item.json.time }}"
+        }
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        240,
+        0
+      ],
+      "id": "9f61520a-9dc3-4c2a-a7d5-3bda910b2319",
+      "name": "Create ticket",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "nTImzEGknEBfqi59",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "Duyệt xử lý sự cố rò rỉ dữ liệu",
+        "formDescription": "=Sự cố: {{ $json.key }} - {{ $json.fields.summary }}\nVui lòng chọn Approve để cô lập/kill tiến trình, hoặc Reject nếu xác nhận hợp lệ.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Decision",
+              "fieldType": "radio",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Approve"
+                  },
+                  {
+                    "option": "Reject"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        384,
+        0
+      ],
+      "id": "e160b06f-ac82-4d3a-b2df-2513c145ec3a",
+      "name": "Wait",
+      "webhookId": "167d2f6c-72c5-437a-9182-d3d774783e65"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ef76b81e-5a96-4137-b411-ef529a4bc50a",
+              "leftValue": "={{ $json.Decision }}",
+              "rightValue": "Approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        528,
+        0
+      ],
+      "id": "a37d5ddb-4c67-43ff-bb57-d910be0a965d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "issueComment",
+        "issueKey": "={{ $('Create ticket').item.json.key }}",
+        "comment": "✅ Đây là hành vi hợp lệ. Đã được phê duyệt bởi quản trị viên.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        688,
+        96
+      ],
+      "id": "4efccb29-ffc8-454b-9248-22a6e87f4c31",
+      "name": "Add a comment",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "nTImzEGknEBfqi59",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://wazuh-n8n-soar.atlassian.net/rest/api/3/issue/{{ $('Create ticket').item.json.key }}/transitions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n     \"transition\": {\n       \"id\": \"31\"\n     }\n   }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        848,
+        96
+      ],
+      "id": "2e31fde2-2d27-477b-930e-fe5f87afdd6b",
+      "name": "HTTP Request",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "nTImzEGknEBfqi59",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://wazuh.manager:55000/security/user/authenticate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        688,
+        -96
+      ],
+      "id": "0f27c3cd-eb5d-4828-9be5-d8e5dc05fbc0",
+      "name": "Get Wazuh Token",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "ASg8YlFlxdSc95A5",
+          "name": "Unnamed credential 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://wazuh.manager:55000/active-response?agents_list={{ $('Code for Linux').isExecuted ? $('Code for Linux').item.json.agentId : $('Code for Windows').item.json.agentId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Get Wazuh Token').item.json.data.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"command\": \"{{ $('Code for Linux').isExecuted ? '!kill-browser-linux' : '!kill-browser-windows' }}\"}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        848,
+        -96
+      ],
+      "id": "a4f9b615-8ab4-4d83-8322-efd41e2925d8",
+      "name": "Trigger Kill Browser"
+    },
+    {
+      "parameters": {
+        "resource": "issueComment",
+        "issueKey": "={{ $('Create ticket').item.json.key }}",
+        "comment": " ✅ Đã xác nhận sự cố. Hệ thống đã chặn tiến trình trình duyệt trên endpoint. Đã được phê duyệt bởi quản trị viên.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        -96
+      ],
+      "id": "82754ba0-cde4-4e97-a2ec-874a079c5297",
+      "name": "Add a comment1",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "nTImzEGknEBfqi59",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://wazuh-n8n-soar.atlassian.net/rest/api/3/issue/{{ $('Create ticket').item.json.key }}/transitions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"transition\": {\"id\": \"31\"}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1168,
+        -96
+      ],
+      "id": "52321b5f-226b-4722-98d0-54992bd95c24",
+      "name": "Close Ticket",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "nTImzEGknEBfqi59",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Code for Linux",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code for Windows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code for Windows": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code for Linux": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Create ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create ticket": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Get Wazuh Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add a comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add a comment": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Wazuh Token": {
+      "main": [
+        [
+          {
+            "node": "Trigger Kill Browser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Kill Browser": {
+      "main": [
+        [
+          {
+            "node": "Add a comment1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add a comment1": {
+      "main": [
+        [
+          {
+            "node": "Close Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d32ece0f-f50f-4c72-8b1e-f6f5435f7103",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f90da41786ff159b19092edc3a2d48d9b9d81b248e4d752096cbfe88838ea36a"
+  },
+  "id": "B9OiTudylNt70tQC",
+  "tags": []
+}

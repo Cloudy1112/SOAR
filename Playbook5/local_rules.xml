@@ -1,0 +1,51 @@
+<!--
+  Playbook 5 - Phát hiện & ngăn chặn rò rỉ dữ liệu nội bộ
+  File: /var/ossec/etc/rules/local_rules.xml (trong container Manager)
+  Chỉ trích phần rule liên quan Playbook 5.
+-->
+<group name="local,syslog,sshd,">
+
+  <!-- ===== Playbook 5: Data Leak Detection ===== -->
+
+  <!-- A. Linux: Truy cập dữ liệu nhạy cảm (qua auditd key) -->
+  <rule id="100500" level="10">
+    <if_group>audit</if_group>
+    <field name="audit.key">sensitive_data</field>
+    <description>Linux Sensitive Data Access Detected</description>
+    <mitre>
+      <id>T1005</id>
+    </mitre>
+  </rule>
+
+  <!-- C. Linux: Trình duyệt truy cập file nhạy cảm -> nghi ngờ upload -->
+  <rule id="100520" level="12">
+    <if_sid>100500</if_sid>
+    <match>firefox|chrome|chromium</match>
+    <description>Potential Data Exfiltration: Browser accessed sensitive file on Linux</description>
+    <mitre>
+      <id>T1567</id>
+    </mitre>
+  </rule>
+
+  <!-- A. Windows: Truy cập dữ liệu nhạy cảm (Event ID 4663 trên C:\Sensitive) -->
+  <rule id="100510" level="10">
+    <if_group>windows</if_group>
+    <field name="win.system.eventID">^4663$</field>
+    <field name="win.eventdata.objectName">Sensitive</field>
+    <description>Windows Sensitive Data Access Detected</description>
+    <mitre>
+      <id>T1005</id>
+    </mitre>
+  </rule>
+
+  <!-- C. Windows: Trình duyệt truy cập file nhạy cảm -> nghi ngờ upload -->
+  <rule id="100530" level="12">
+    <if_sid>100510</if_sid>
+    <field name="win.eventdata.processName">msedge|chrome</field>
+    <description>Potential Data Exfiltration: Browser accessed sensitive file on Windows</description>
+    <mitre>
+      <id>T1567</id>
+    </mitre>
+  </rule>
+
+</group>

@@ -1,0 +1,19 @@
+#!/bin/bash
+# Playbook 5 - Active Response: kill browser (Ubuntu Agent)
+# Vi tri: /var/ossec/active-response/bin/kill-browser-linux
+#   LUU Y: ten file phai TRUNG ten <command> trong ossec.conf va KHONG co duoi .sh
+#          (yeu cau cua Wazuh 4.2+)
+# Quyen:  sudo chmod 750 /var/ossec/active-response/bin/kill-browser-linux
+#         sudo chown root:wazuh /var/ossec/active-response/bin/kill-browser-linux
+
+LOG="/var/ossec/logs/active-responses.log"
+
+read INPUT
+echo "$(date) kill-browser triggered: $INPUT" >> "$LOG"
+
+pkill -f firefox
+pkill -f chrome
+pkill -f chromium
+
+echo "$(date) kill-browser done" >> "$LOG"
+exit 0

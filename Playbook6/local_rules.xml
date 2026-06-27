@@ -1,0 +1,40 @@
+<!--
+  Playbook 6 - Credential Dumping & Anti-forensics
+  File: /var/ossec/etc/rules/local_rules.xml (trong container Manager)
+  Chi trich phan rule lien quan Playbook 6.
+-->
+<group name="local,syslog,sshd,">
+
+  <!-- ===== Playbook 6: Credential Dumping & Anti-forensics ===== -->
+
+  <!-- Credential Dumping: doc file mat khau he thong (/etc/shadow, /etc/gshadow) -->
+  <!-- ignore="10": chong trung, moi 10s chi 1 alert cho cung rule -->
+  <rule id="100600" level="12" ignore="10">
+    <if_group>audit</if_group>
+    <field name="audit.key">credential_theft</field>
+    <description>Credential Dumping: Phat hien doc file mat khau he thong</description>
+    <mitre>
+      <id>T1003</id>
+    </mitre>
+  </rule>
+
+  <!-- Loai tru tien trinh he thong + sudo doc shadow hop le (giam false positive) -->
+  <!-- sudo doc shadow de xac thuc la binh thuong; chi canh bao khi cat/less/cp... doc -->
+  <rule id="100601" level="3" ignore="10">
+    <if_sid>100600</if_sid>
+    <field name="audit.exe">sudo|cron|systemd|unix_chkpwd|sshd|login|/usr/sbin/</field>
+    <description>Credential file access by system/auth process (benign)</description>
+  </rule>
+
+  <!-- Anti-forensics: xoa/sua/lam rong file log he thong -->
+  <!-- level 13 (cao nhat): xoa log la dau hieu che giau xam nhap nghiem trong -->
+  <rule id="100610" level="13" ignore="10">
+    <if_group>audit</if_group>
+    <field name="audit.key">anti_forensics</field>
+    <description>Anti-forensics: Phat hien hanh vi xoa/sua file log he thong</description>
+    <mitre>
+      <id>T1070</id>
+    </mitre>
+  </rule>
+
+</group>

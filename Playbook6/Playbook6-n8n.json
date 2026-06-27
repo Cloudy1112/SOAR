@@ -1,0 +1,365 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "credential-theft",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -576,
+        -48
+      ],
+      "id": "3064f652-ef32-4815-9d1c-55c2abc80417",
+      "name": "Webhook",
+      "webhookId": "d0f4f094-1b21-4331-a355-94ca99c4a28e"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.rule.id }}",
+                    "rightValue": "100600",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "59d4c242-94ed-4ced-b837-730e7936300d"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Credential Dumping"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c1a29ea9-854c-4f40-922c-d2e7fcfa16a9",
+                    "leftValue": "={{ $json.body.rule.id }}",
+                    "rightValue": "100610",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Anti-forensics"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -416,
+        -48
+      ],
+      "id": "b30aec9c-021c-4198-8cc8-0b3a40821fe6",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const b = $json.body;\nconst a = b.data?.audit ?? {};\n\n// Lay ten user (dang chu) tu full_log\nlet user = a.auid;\nconst m = (b.full_log || \"\").match(/AUID=\"([^\"]+)\"/);\nif (m) user = m[1];\n\nreturn {\n  type: b.rule.id === \"100600\" ? \"Credential Dumping (Đánh cắp mật khẩu hệ thống)\" : \"Anti-forensics (Xóa dấu vết)\",\n  severity: b.rule.id === \"100610\" ? \"KHẨN CẤP\" : \"Cao\",\n  agent: b.agent?.name ?? \"N/A\",\n  agentIp: b.agent?.ip ?? \"N/A\",\n  agentId: b.agent?.id,\n  user: user ?? \"unknown\",\n  process: a.exe ?? \"N/A\",\n  file: a.file?.name ?? \"N/A\",\n  ruleId: b.rule.id,\n  ruleDesc: b.rule.description,\n  mitre: b.rule?.mitre?.id?.[0] ?? \"\",\n  time: b.timestamp\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        -48
+      ],
+      "id": "26eaa4c8-0355-4097-bc16-a498d011c7ce",
+      "name": "Extract Data"
+    },
+    {
+      "parameters": {
+        "chatId": "8928212956",
+        "text": "=🚨 CẢNH BÁO BẢO MẬT - {{ $json.severity }} 🚨  \nLoại hành vi: {{ $json.type }} \nMITRE: {{ $json.mitre }} \nMáy: {{ $json.agent }} ({{ $json.agentIp }}) \nNgười dùng: {{ $json.user }} \nTiến trình: {{ $json.process }} \nTệp liên quan: {{ $json.file }} \nThời gian: {{ $json.time }}  \n⚠️ Phát hiện hành vi đánh cắp thông tin xác thực hoặc xóa dấu vết hệ thống.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -32,
+        48
+      ],
+      "id": "741dcbcf-c2ba-4742-ba3f-63455526e0e5",
+      "name": "Send a text message",
+      "webhookId": "26336743-074e-4229-bc70-a016b93f479a",
+      "credentials": {
+        "telegramApi": {
+          "id": "BcSBhf72msBepYR4",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://wazuh.manager:55000/security/user/authenticate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        128,
+        -144
+      ],
+      "id": "7384cbd6-39f8-4650-9211-125751ab326e",
+      "name": "Get Wazuh Token",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "ASg8YlFlxdSc95A5",
+          "name": "Unnamed credential 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://wazuh.manager:55000/active-response?agents_list={{ $('Extract Data').item.json.agentId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Get Wazuh Token').item.json.data.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"command\": \"!disable-user\",\n  \"arguments\": [\"{{ $('Extract Data').item.json.user }}\"]\n}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        288,
+        -144
+      ],
+      "id": "550211fd-6d3c-424c-998f-ea53ef0b042a",
+      "name": "Disable User"
+    },
+    {
+      "parameters": {
+        "project": {
+          "__rl": true,
+          "value": "10000",
+          "mode": "list",
+          "cachedResultName": "SOAR"
+        },
+        "issueType": {
+          "__rl": true,
+          "value": "10003",
+          "mode": "list",
+          "cachedResultName": "Task"
+        },
+        "summary": "=[{{ $json.severity }}] {{ $json.type }} - {{ $json.user }}@{{ $json.agent }}",
+        "additionalFields": {
+          "description": "=Phát hiện hành vi bảo mật nghiêm trọng.  \n- Loại: {{ $json.type }} \n- Mức độ: {{ $json.severity }} \n- MITRE ATT&CK: {{ $json.mitre }} \n- Máy: {{ $json.agent }} ({{ $json.agentIp }}) \n- Người dùng: {{ $json.user }} \n- Tiến trình: {{ $json.process }} \n- Tệp: {{ $json.file }} \n- Rule: {{ $json.ruleId }} \n- {{ $json.ruleDesc }} \n- Thời gian: {{ $json.time }}"
+        }
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -144
+      ],
+      "id": "b7f66ad6-685a-4047-8257-4714a955f4fa",
+      "name": "Create ticket",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "nTImzEGknEBfqi59",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://wazuh-n8n-soar.atlassian.net/rest/api/3/issue/{{ $('Create ticket').item.json.key }}/transitions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"transition\": {\"id\": \"31\"}}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        -144
+      ],
+      "id": "60fd1458-844f-4a90-a742-9b83c2b89070",
+      "name": "Close ticket",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "nTImzEGknEBfqi59",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "issueComment",
+        "issueKey": "={{ $('Create ticket').item.json.key }}",
+        "comment": "=✅ Đã tự động khóa tài khoản người dùng thực hiện hành vi đánh cắp thông tin xác thực / xóa dấu vết. Sự cố đã được xử lý tự động bởi hệ thống SOAR.  \n- Người dùng bị khóa: {{ $('Extract Data').item.json.user }} \n- Loại hành vi: {{ $('Extract Data').item.json.type }} \n- Tiến trình: {{ $('Extract Data').item.json.process }} \n- Thời gian phát hiện: {{ $('Extract Data').item.json.time }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        544,
+        -144
+      ],
+      "id": "4235c24e-6e5c-49e9-b119-3bda80dc760a",
+      "name": "Add a comment",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "nTImzEGknEBfqi59",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Extract Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Data": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Wazuh Token": {
+      "main": [
+        [
+          {
+            "node": "Disable User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disable User": {
+      "main": [
+        [
+          {
+            "node": "Close ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create ticket": {
+      "main": [
+        [
+          {
+            "node": "Get Wazuh Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Close ticket": {
+      "main": [
+        [
+          {
+            "node": "Add a comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "692cabb0-9549-4519-aae1-b340b47f6f2e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f90da41786ff159b19092edc3a2d48d9b9d81b248e4d752096cbfe88838ea36a"
+  },
+  "id": "6qtDFIiPkEcHAurQ",
+  "tags": []
+}

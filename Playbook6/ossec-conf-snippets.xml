@@ -1,0 +1,32 @@
+<!--
+  Playbook 6 - Cac block can them vao ossec.conf cua Wazuh Manager
+  (trong wazuh-docker: file config/wazuh_cluster/wazuh_manager.conf)
+  Dat cac block nay ben trong <ossec_config>...</ossec_config>
+-->
+
+<!-- ============ INTEGRATION: day alert sang n8n ============ -->
+<!--
+  Dung chung integration custom-n8n voi cac playbook khac.
+  Script custom-n8n route theo rule_id:
+    rule 100600 / 100610 -> webhook /credential-theft (Playbook 6)
+  Xem file custom-n8n-routing.py de biet phan routing.
+-->
+
+
+<!-- ============ ACTIVE RESPONSE: khoa tai khoan ============ -->
+
+<command>
+  <name>disable-user</name>
+  <executable>disable-user</executable>
+  <timeout_allowed>no</timeout_allowed>
+</command>
+
+<!--
+  Khong khai bao <rules_id> -> AR khong tu dong chay.
+  n8n chu dong goi qua Wazuh API sau khi phan loai alert (khoa user tu dong ngay,
+  khong qua buoc duyet - vi credential dumping / anti-forensics la hanh vi nghiem trong).
+-->
+<active-response>
+  <command>disable-user</command>
+  <location>local</location>
+</active-response>

@@ -1,0 +1,8 @@
+
+<!-- 2026 Jun 20 14:08:34 OPNsense.internal->192.168.1.100 Jun 20 21:08:34 OPNsense.internal configd.py[64966]: [72c0699e-e9b8-4992-bff6-4120ea07ab62] request filter log output
+-->
+<decoder name="opn-config">
+  <prematch>configd.py</prematch>
+  <regex type="pcre2">configd.py\[\d+\]: \[([^\]]+)\] (.*)</regex>  
+  <order>guid, message</order>
+</decoder>

@@ -39,4 +39,13 @@ docker exec -it <wazuh-manager> bash
 chmod 755 /var/ossec/integrations/custom-n8n.py
 exit
 docker exec -it <wazuh-manager> /var/ossec/bin/wazuh-control restart integrator
+
+chown wazuh:wazuh /var/ossec/etc/decoders/opn_audit.xml
+chown wazuh:wazuh /var/ossec/etc/decoders/opn_filter.xml
+chown wazuh:wazuh /var/ossec/etc/decoders/opn_config.xml 
+chmod 660  /var/ossec/etc/decoders/opn_audit.xml
+chmod 660  /var/ossec/etc/decoders/opn_filter.xml 
+chmod 660  /var/ossec/etc/decoders/opn_config.xml
+ls -la  /var/ossec/etc/decoders/
+
 ```

@@ -5,22 +5,26 @@ import time
 import urllib.request
 import urllib.error
 import os
+import base64
 from datetime import datetime
 
 # ------------------- CẤU HÌNH -------------------
-DEDUP_WINDOW = 300          # 5 phút, không gửi lại cùng một sự kiện trong khoảng này
-CACHE_FILE = "/var/ossec/logs/fim_cache.json"
+DEDUP_WINDOW = 300
+CACHE_FILE = "/var/ossec/logs/process_cache.json"
 LOG_FILE = "/var/ossec/logs/integrations.log"
+
+# Thông tin kết nối Indexer API
+INDEXER_URL = "https://192.168.1.250:9200"   # Địa chỉ indexer
+INDEXER_USER = "admin"                       # Tài khoản
+INDEXER_PASS = "SecretPassword"              # Mật khẩu
 
 # ------------------- HÀM TIỆN ÍCH -------------------
 def write_log(msg):
-    """Ghi log vào file integrations.log"""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(LOG_FILE, "a") as f:
         f.write(f"{timestamp} {msg}\n")
 
 def safe_get(obj, *keys, default=None):
-    """Truy cập an toàn vào nested dict"""
     for key in keys:
         try:
             obj = obj[key]
@@ -29,7 +33,6 @@ def safe_get(obj, *keys, default=None):
     return obj
 
 def load_cache():
-    """Đọc cache từ file JSON"""
     if not os.path.exists(CACHE_FILE):
         return {}
     try:
@@ -40,7 +43,6 @@ def load_cache():
         return {}
 
 def save_cache(cache):
-    """Ghi cache vào file JSON"""
     try:
         with open(CACHE_FILE, "w") as f:
             json.dump(cache, f, indent=2)
@@ -48,16 +50,69 @@ def save_cache(cache):
         write_log(f"Error saving cache: {str(e)}")
 
 def clean_cache(cache, max_age=3600):
-    """Xóa các entry cũ hơn max_age (giây)"""
     now = time.time()
     to_remove = [k for k, v in cache.items() if now - v.get("timestamp", 0) > max_age]
     for k in to_remove:
         del cache[k]
     return cache
 
-# ------------------- HÀM TRÍCH XUẤT DỮ LIỆU CHO RANSOMWARE -------------------
+# ------------------- GỌI INDEXER API LẤY HASH -------------------
+def query_indexer_for_hash(file_path, agent_id):
+    """
+    Tìm sự kiện có image hoặc parentImage khớp với file_path,
+    trả về SHA256 (chuỗi) hoặc None.
+    """
+    query = {
+        "query": {
+            "bool": {
+                "should": [
+                    {"match": {"data.win.eventdata.image": file_name}},
+                    {"match": {"data.win.eventdata.parentImage": file_name}}
+                ],
+                "minimum_should_match": 1,
+                "filter": [
+                    {"term": {"agent.id": agent_id}},
+                    {"range": {"@timestamp": {"gte": "now-24h"}}}
+                ]
+            }
+        },
+        "size": 1,
+        "sort": [{"@timestamp": "desc"}]
+    }
+
+    url = f"{INDEXER_URL}/wazuh-alerts-*/_search"
+    data = json.dumps(query).encode("utf-8")
+    
+    # Basic Auth header
+    credentials = f"{INDEXER_USER}:{INDEXER_PASS}"
+    encoded_auth = base64.b64encode(credentials.encode()).decode()
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Basic {encoded_auth}"
+    }
+
+    try:
+        req = urllib.request.Request(url, data=data, headers=headers, method="GET")
+        with urllib.request.urlopen(req, timeout=10) as response:
+            resp_data = json.loads(response.read().decode())
+            hits = resp_data.get("hits", {}).get("hits", [])
+            if hits:
+                source = hits[0].get("_source", {})
+                hashes_str = safe_get(source, "data", "win", "eventdata", "hashes")
+                if hashes_str:
+                    for part in hashes_str.split(","):
+                        if part.startswith("SHA256="):
+                            return part.split("=", 1)[1]
+                # Fallback: nếu không có hashes trong eventdata, thử syscheck
+                sha256 = safe_get(source, "syscheck", "sha256_after")
+                if sha256:
+                    return sha256
+    except Exception as e:
+        write_log(f"Error querying indexer: {str(e)}")
+    return None
+
+# ------------------- TRÍCH XUẤT DỮ LIỆU -------------------
 def extract_agent_info(alert_data):
-    """Lấy thông tin agent"""
     agent = alert_data.get("agent", {})
     return {
         "id": agent.get("id", "unknown"),
@@ -65,153 +120,141 @@ def extract_agent_info(alert_data):
         "ip": agent.get("ip", "unknown")
     }
 
-def extract_fim_details(alert_data):
-    """Trích xuất các trường FIM whodata cần thiết"""
-    syscheck = alert_data.get("syscheck", {})
-    audit = syscheck.get("audit", {})
-    process = audit.get("process", {})
-    user = audit.get("user", {})
+def extract_process_details(alert_data):
+    eventdata = safe_get(alert_data, "data", "win", "eventdata", default={})
+    if not eventdata:
+        return None
 
     return {
-        "event_type": syscheck.get("event", "unknown"),      # added, modified, deleted
-        "file_path": syscheck.get("path", ""),
-        "mode": syscheck.get("mode", ""),                    # whodata / realtime
-        "process_name": process.get("name", ""),
-        "process_id": process.get("id", ""),
-        "user_name": user.get("name", ""),
-        "user_id": user.get("id", ""),
-        "sha256_before": syscheck.get("sha256_before", ""),
-        "sha256_after": syscheck.get("sha256_after", ""),
-        "md5_before": syscheck.get("md5_before", ""),
-        "md5_after": syscheck.get("md5_after", ""),
-        "diff": syscheck.get("diff", ""),                    # nội dung thay đổi (nếu report_changes=yes)
-        "changed_attrs": syscheck.get("changed_attributes", []),
-        "size_before": syscheck.get("size_before", 0),
-        "size_after": syscheck.get("size_after", 0)
+        "process": {
+            "image": eventdata.get("image", ""),
+            "guid": eventdata.get("processGuid", ""),
+            "pid": eventdata.get("processId", ""),
+            "commandLine": eventdata.get("commandLine", ""),
+            "hashes": eventdata.get("hashes", ""),
+            "integrityLevel": eventdata.get("integrityLevel", ""),
+            "user": eventdata.get("user", ""),
+            "logonGuid": eventdata.get("logonGuid", ""),
+            "logonId": eventdata.get("logonId", ""),
+            "terminalSessionId": eventdata.get("terminalSessionId", ""),
+            "currentDirectory": eventdata.get("currentDirectory", ""),
+        },
+        "parent": {
+            "image": eventdata.get("parentImage", ""),
+            "guid": eventdata.get("parentProcessGuid", ""),
+            "pid": eventdata.get("parentProcessId", ""),
+            "commandLine": eventdata.get("parentCommandLine", ""),
+            "user": eventdata.get("parentUser", ""),
+        },
+        "utcTime": eventdata.get("utcTime", ""),
+        "originalFileName": eventdata.get("originalFileName", ""),
+        "description": eventdata.get("description", ""),
+        "company": eventdata.get("company", ""),
+        "fileVersion": eventdata.get("fileVersion", ""),
+        "product": eventdata.get("product", "")
     }
 
 def extract_rule_info(alert_data):
-    """Trích xuất thông tin rule và MITRE"""
     rule = alert_data.get("rule", {})
-    mitre = rule.get("mitre", {})
     return {
         "id": rule.get("id", ""),
         "level": rule.get("level", 0),
         "description": rule.get("description", ""),
-        "mitre_id": mitre.get("id", []),
-        "mitre_technique": mitre.get("technique", []),
-        "mitre_tactic": mitre.get("tactic", [])
+        "mitre_id": rule.get("mitre", {}).get("id", [])
     }
 
 def extract_full_log(alert_data):
-    """Lấy full_log (chứa chi tiết thay đổi)"""
     return alert_data.get("full_log", "")
 
-# ------------------- HÀM XÂY DỰNG PAYLOAD CHO n8n -------------------
-def build_payload(alert_data, fim_details, agent_info, rule_info, full_log):
-    """Tạo payload JSON gửi đến webhook n8n"""
-    # Tạo một cache key độc nhất (agent + file_path + event_type + user)
-    cache_key = f"{agent_info['id']}_{fim_details['file_path']}_{fim_details['event_type']}_{fim_details['user_name']}"
-    return {
-        "source": "wazuh_fim",
-        "timestamp": alert_data.get("timestamp"),
+# ------------------- XÂY DỰNG PAYLOAD -------------------
+def build_payload(alert_data, process_details, agent_info, rule_info, full_log, parent_hash=None):
+    cache_key = f"{agent_info['id']}_{process_details['parent']['guid']}_{process_details['process']['guid']}"
+    payload = {
+        "source": "wazuh_process",
+        "timestamp": alert_data.get("timestamp", ""),
+        "@timestamp": alert_data.get("@timestamp", ""),
         "agent": agent_info,
         "rule": rule_info,
-        "fim": {
-            "event_type": fim_details["event_type"],
-            "file_path": fim_details["file_path"],
-            "mode": fim_details["mode"],
-            "process": {
-                "name": fim_details["process_name"],
-                "pid": fim_details["process_id"]
-            },
-            "user": {
-                "name": fim_details["user_name"],
-                "sid": fim_details["user_id"]
-            },
-            "hash": {
-                "sha256_before": fim_details["sha256_before"],
-                "sha256_after": fim_details["sha256_after"],
-                "md5_before": fim_details["md5_before"],
-                "md5_after": fim_details["md5_after"]
-            },
-            "diff": fim_details["diff"],
-            "changed_attributes": fim_details["changed_attrs"],
-            "size_before": fim_details["size_before"],
-            "size_after": fim_details["size_after"]
-        },
+        "parent": process_details["parent"],
+        "process": process_details["process"],
+        "utcTime": process_details["utcTime"],
+        "originalFileName": process_details["originalFileName"],
+        "description": process_details["description"],
+        "company": process_details["company"],
+        "fileVersion": process_details["fileVersion"],
+        "product": process_details["product"],
         "full_log": full_log,
-        "cache_key": cache_key   # hỗ trợ debug cache
+        "cache_key": cache_key
     }
+    if parent_hash:
+        payload["parent_hash"] = parent_hash
+    return payload
 
-# ------------------- XỬ LÝ CACHE -------------------
+# ------------------- XỬ LÝ CACHE & GỬI -------------------
 def is_duplicate(cache, cache_key, now, dedup_window):
-    """Kiểm tra xem sự kiện đã được gửi trong dedup_window chưa"""
     if cache_key in cache:
         last_time = cache[cache_key].get("timestamp", 0)
         if now - last_time < dedup_window:
             return True
     return False
 
-def update_cache(cache, cache_key, now, fim_details, agent_info, rule_info):
-    """Cập nhật cache với thông tin sự kiện mới"""
+def update_cache(cache, cache_key, now, process_details, agent_info, rule_info):
     cache[cache_key] = {
         "timestamp": now,
         "agent_id": agent_info["id"],
         "agent_name": agent_info["name"],
-        "file_path": fim_details["file_path"],
-        "event_type": fim_details["event_type"],
-        "process_name": fim_details["process_name"],
-        "user_name": fim_details["user_name"],
+        "parent_image": process_details["parent"]["image"],
+        "parent_guid": process_details["parent"]["guid"],
+        "process_image": process_details["process"]["image"],
+        "process_guid": process_details["process"]["guid"],
         "rule_id": rule_info["id"],
         "rule_level": rule_info["level"]
     }
     save_cache(cache)
 
-# ------------------- HÀM CHÍNH (THEO ĐÚNG CHỮ KÝ YÊU CẦU) -------------------
+# ------------------- HÀM CHÍNH -------------------
 def process_alert(alert_file_path, api_key, hook_url):
-    """
-    Đọc file alert, trích xuất dữ liệu FIM, kiểm tra cache và gửi đến n8n.
-    """
     try:
         with open(alert_file_path, 'r') as f:
             alert_data = json.load(f)
     except Exception as e:
-        write_log(f"Error reading alert file {alert_file_path}: {str(e)}")
+        write_log(f"Error reading alert file: {str(e)}")
         return
 
-    # 1. Trích xuất dữ liệu từ alert
     agent_info = extract_agent_info(alert_data)
-    fim_details = extract_fim_details(alert_data)
+    process_details = extract_process_details(alert_data)
     rule_info = extract_rule_info(alert_data)
     full_log = extract_full_log(alert_data)
 
-    # Nếu không phải sự kiện syscheck (phòng hờ)
-    if not fim_details["event_type"]:
-        write_log("Skipping non-syscheck alert")
+    if not process_details or not process_details["process"].get("image"):
+        write_log("Skipping non-process-creation alert")
         return
 
-    # 2. Tạo cache key duy nhất
-    cache_key = f"{agent_info['id']}_{fim_details['file_path']}_{fim_details['event_type']}_{fim_details['user_name']}"
+    # Lấy hash của parent nếu có parentImage
+    parent_hash = None
+    parent_image = process_details["parent"].get("image")
+    if parent_image:
+        write_log(f"Querying hash for parent: {parent_image}")
+        parent_hash = query_indexer_for_hash(parent_image, agent_info["id"])
+        if parent_hash:
+            write_log(f"Found parent hash: {parent_hash}")
+        else:
+            write_log(f"Parent hash not found for {parent_image}")
 
-    # 3. Load cache và làm sạch
+    cache_key = f"{agent_info['id']}_{process_details['parent']['guid']}_{process_details['process']['guid']}"
     cache = load_cache()
-    cache = clean_cache(cache, max_age=3600)   # tự động xóa cache quá 1 giờ
+    cache = clean_cache(cache, max_age=3600)
     now = time.time()
 
-    # 4. Kiểm tra duplicate
     if is_duplicate(cache, cache_key, now, DEDUP_WINDOW):
         write_log(f"Duplicate suppressed: {cache_key}")
         return
 
-    # 5. Cập nhật cache
-    update_cache(cache, cache_key, now, fim_details, agent_info, rule_info)
+    update_cache(cache, cache_key, now, process_details, agent_info, rule_info)
 
-    # 6. Xây dựng payload
-    payload = build_payload(alert_data, fim_details, agent_info, rule_info, full_log)
+    payload = build_payload(alert_data, process_details, agent_info, rule_info, full_log, parent_hash)
     data = json.dumps(payload).encode("utf-8")
 
-    # 7. Gửi đến n8n webhook
     try:
         req = urllib.request.Request(
             hook_url,
@@ -221,23 +264,18 @@ def process_alert(alert_file_path, api_key, hook_url):
         with urllib.request.urlopen(req, timeout=10) as response:
             status = response.status
             body = response.read().decode()
-            write_log(f"Sent alert {rule_info['id']} to n8n. Status: {status}")
+            write_log(f"Sent alert (rule {rule_info['id']}) to n8n. Status: {status}")
             if status == 200:
-                write_log(f"Success: {body[:200]}")   # log tối đa 200 ký tự
+                write_log(f"Success: {body[:200]}")
             else:
                 write_log(f"Failed: {status} - {body}")
-    except urllib.error.HTTPError as e:
-        write_log(f"HTTP Error: {e.code} - {e.reason}")
-    except urllib.error.URLError as e:
-        write_log(f"URL Error: {e.reason}")
     except Exception as e:
-        write_log(f"Unexpected error sending to n8n: {str(e)}")
+        write_log(f"Error sending to n8n: {str(e)}")
 
-# ------------------- ĐIỂM VÀO CỦA SCRIPT (DÙNG CHO WAZUH INTEGRATION) -------------------
+# ------------------- ĐIỂM VÀO -------------------
 if __name__ == "__main__":
-    # Wazuh integrator gọi script với 4 tham số: alert_file, api_key, hook_url, full_alert_file
     if len(sys.argv) < 4:
-        write_log("ERROR: Missing arguments. Expected: <alert_file> <api_key> <hook_url> [full_alert_file]")
+        write_log("ERROR: Missing arguments. Expected: <alert_file> <api_key> <hook_url>")
         sys.exit(1)
 
     alert_file_path = sys.argv[1]

@@ -1,0 +1,999 @@
+{
+  "name": "webshell",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wazuh-alert/webshell",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1712,
+        -64
+      ],
+      "id": "41a70c91-f8cc-417a-8ab3-8385ace15b99",
+      "name": "Webhook",
+      "webhookId": "9a75f104-ea76-4a01-b855-cc054cd3a445"
+    },
+    {
+      "parameters": {
+        "url": "https://api.abuseipdb.com/api/v2/check",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "ipAddress",
+              "value": "={{ $('Extract IP/Domain').item.json.extracted_ip }}"
+            },
+            {
+              "name": "maxAgeInDay",
+              "value": "90"
+            },
+            {
+              "name": "verbose"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "=application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1008,
+        -240
+      ],
+      "id": "f47fd82c-83a1-421f-bb98-bf052ab59ef9",
+      "name": "Check AbuseIPDB",
+      "retryOnFail": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "R7DL6JooYSrLVHpX",
+          "name": "Header Auth account 2"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Check AbuseIPDB').item.json.data.abuseConfidenceScore }}",
+                    "rightValue": 25,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gt"
+                    },
+                    "id": "d357f662-86fa-4bad-9761-c1d6e00dce4d"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": ">25"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "0c353fff-147d-450f-875d-bbc908c2f56c",
+                    "leftValue": "={{ $('Check AbuseIPDB').item.json.data.abuseConfidenceScore }}",
+                    "rightValue": 26,
+                    "operator": {
+                      "type": "number",
+                      "operation": "lt"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "<26"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "f5852d7b-8273-41f1-a5d8-4d8468b3a963",
+                    "leftValue": "",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Failed getting AbuseConfidenceScore"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -832,
+        -368
+      ],
+      "id": "b3f3cbde-8fa0-437c-9fee-046079ccbba7",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Hàm trích xuất IP, port, domain\nfunction extractIpPortDomain(command) {\n    if (!command) {\n        return { ip: null, port: null, domain: null };\n    }\n\n    // Regex IPv4\n    const ipPattern = /(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)/;\n    const domainPattern = /(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}/;\n\n    let ip = null, port = null, domain = null;\n\n    // 1. Tìm IP\n    const ipMatch = command.match(ipPattern);\n    if (ipMatch) {\n        ip = ipMatch[0];\n        // Tìm port xuất hiện ngay sau IP (thường là /dev/tcp/IP/PORT)\n        const pos = command.indexOf(ip) + ip.length;\n        const after = command.substring(pos);\n        const numsAfter = after.match(/\\b([0-9]{1,5})\\b/g);\n        if (numsAfter && numsAfter.length > 0) {\n            port = numsAfter[0]; // lấy số đầu tiên sau IP\n        }\n    } else {\n        // 2. Không có IP => tìm domain\n        const domainMatch = command.match(domainPattern);\n        if (domainMatch) {\n            domain = domainMatch[0];\n        }\n        // Lấy số cuối cùng trong lệnh làm port (dự đoán)\n        const allNums = command.match(/\\b([0-9]{1,5})\\b/g);\n        if (allNums && allNums.length > 0) {\n            port = allNums[allNums.length - 1];\n        }\n    }\n\n    return { ip, port, domain };\n}\n\n// Trích xuất decoded_command\nconst decodedCommand = $(\"Webhook\").item.json.body.decoded_command;\n// Gọi hàm và nhận kết quả\nconst { ip, port, domain } = extractIpPortDomain(decodedCommand);\n\n// Tạo object mới chỉ chứa 3 trường\nconst newPayload = {\n  extracted_ip: ip,\n  extracted_port: port,\n  extracted_domain: domain\n};\n\n// In ra log để debug (kiểm tra trong phần Executions)\nconsole.log(`Extracted IP: ${ip}, Port: ${port}, Domain: ${domain}`);\n\n// Trả về item đã cập nhật\nreturn [newPayload];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1264,
+        -64
+      ],
+      "id": "5953437c-8a4f-4156-883f-ed15b0e9d50c",
+      "name": "Extract IP/Domain"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.virustotal.com/api/v3/domains/{{ $('Extract IP/Domain').item.json.extracted_domain }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "=application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -928,
+        96
+      ],
+      "id": "a29e006a-0b7c-4229-9aab-71a66983ce64",
+      "name": "Check Domain",
+      "retryOnFail": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "VWIhBY18yzM6hs8l",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Check Domain').item.json.data.attributes.last_analysis_stats.malicious }}",
+                    "rightValue": 5,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    },
+                    "id": "d357f662-86fa-4bad-9761-c1d6e00dce4d"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "malicious >=5"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "0c353fff-147d-450f-875d-bbc908c2f56c",
+                    "leftValue": "={{ $('Check Domain').item.json.data.attributes.last_analysis_stats.suspicious }}",
+                    "rightValue": 5,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "suspicious >=5"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "f5852d7b-8273-41f1-a5d8-4d8468b3a963",
+                    "leftValue": "={{ $('Check Domain').item.json.data.attributes.last_analysis_stats.undetected }}",
+                    "rightValue": "=( {{ $('Check Domain').item.json.data.attributes.last_analysis_stats.malicious }} + {{ $('Check Domain').item.json.data.attributes.last_analysis_stats.suspicious }} + {{ $('Check Domain').item.json.data.attributes.last_analysis_stats.undetected }} + {{ $('Check Domain').item.json.data.attributes.last_analysis_stats.harmless }} + {{ $('Check Domain').item.json.data.attributes.last_analysis_stats.timeout }} ) / 3",
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "undetected > 30%"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "16cd98a5-bc45-4310-94d4-ce37d64a7ea6",
+                    "leftValue": "={{ $('Check Domain').item.json.data.attributes.last_analysis_stats.timeout }}",
+                    "rightValue": "=( {{ $('Check Domain').item.json.data.attributes.last_analysis_stats.malicious }} + {{ $('Check Domain').item.json.data.attributes.last_analysis_stats.suspicious }} + {{ $('Check Domain').item.json.data.attributes.last_analysis_stats.undetected }} + {{ $('Check Domain').item.json.data.attributes.last_analysis_stats.harmless }} +  {{ $('Check Domain').item.json.data.attributes.last_analysis_stats.timeout }}) / 2",
+                    "operator": {
+                      "type": "number",
+                      "operation": "gte"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "timeout > 50%"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -704,
+        48
+      ],
+      "id": "48d28f7b-2e3f-437c-9289-7f021a2bf215",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://192.168.1.250:55000/security/user/authenticate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1552,
+        -64
+      ],
+      "id": "bed53767-b5fb-464c-9ed2-609e07941079",
+      "name": "obtain a JWT token in order to run any endpoint",
+      "notesInFlow": true,
+      "retryOnFail": false,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "3fgXrP5jl7Pr1eq2",
+          "name": "Unnamed credential 2"
+        }
+      },
+      "notes": "Failed in obtaining a JWT token"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "https://192.168.1.250:55000/active-response",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "agents_list",
+              "value": "={{ $('Webhook').item.json.body.agent_id }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('obtain a JWT token in order to run any endpoint').item.json.data.token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"command\": \"!kill-shell-connections\",\n  \"alert\": {\n    \"data\": {\n    }\n  }\n}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1408,
+        -64
+      ],
+      "id": "8f503827-2b40-497e-a035-57a5b8266cc6",
+      "name": "kill connection",
+      "retryOnFail": false,
+      "notesInFlow": true,
+      "waitBetweenTries": 5000,
+      "notes": "Failed in sending API to wazuh manager to active-response"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b7860f99-d838-4d28-969c-5daab4ddd543",
+                    "leftValue": "={{$('Extract IP/Domain').item.json.extracted_domain}}",
+                    "rightValue": "\"null\"",
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "domain null"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Extract IP/Domain').item.json.extracted_ip }}",
+                    "rightValue": "\"null\"",
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    },
+                    "id": "50f2639c-77a7-436d-9fb1-02b23f96d310"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ip null"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -1104,
+        -48
+      ],
+      "id": "2f69efc6-4e86-45f7-ac69-c96ea5ec81e0",
+      "name": "IP/ Domain null"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.abuseipdb.com/api/v2/report",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "=application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "ip",
+              "value": "={{ $('Extract IP/Domain').item.json.extracted_ip }}"
+            },
+            {
+              "name": "categories",
+              "value": "20,21"
+            },
+            {
+              "name": "comment",
+              "value": "=Malicious IP detected by Wazuh - Rule {{ $('Webhook').item.json.body.description }}"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{ new Date($('Webhook').item.json.body.timestamp).toISOString() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -736,
+        -128
+      ],
+      "id": "8199e599-7ac5-4bb9-9d09-8591fb71da5d",
+      "name": "Report IP",
+      "retryOnFail": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "R7DL6JooYSrLVHpX",
+          "name": "Header Auth account 2"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "U0B5SS5GMFC",
+          "mode": "list",
+          "cachedResultName": "chonglevan2004"
+        },
+        "text": "=🚨 Report Malicous IP 🚨\n🖥️ Target Details:\n    - Timestamp: {{ $('Webhook').item.json.body.timestamp }}\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID: {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP: {{ $('Webhook').item.json.body.agent_ip }}  \n🛡️ Action Taken:\n    Reported IP (Attacker): {{ $('Extract IP/Domain').item.json.extracted_ip }}\n    Status: Executed successfully.",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        -560,
+        -256
+      ],
+      "id": "86080b14-7b70-41b8-b8ab-9b402a1cc5a8",
+      "name": "Send a message reported successfully",
+      "webhookId": "2b13bd11-75cd-4207-bf09-4275039aaf58",
+      "notesInFlow": true,
+      "credentials": {
+        "slackApi": {
+          "id": "SoKR6OYDbARyguhq",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://192.168.1.100/api/unbound/settings/add_host_override",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"host\": {\n      \"enabled\": \"1\",\n      \"hostname\": \"\",\n      \"domain\": \"{{ $('Extract IP/Domain').item.json.extracted_domain}}\",\n      \"server\": \"127.0.0.1\",\n      \"description\": \"Blocked by n8n\"\n    }\n  }",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -432,
+        96
+      ],
+      "id": "c05af35f-919e-4272-bd9d-9cc33cee5d34",
+      "name": "Add host override",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "AupywgZK1CctfV3S",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://192.168.1.100/api/firewall/alias_util/add/blocked_ips",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "address",
+              "value": "={{ $('Extract IP/Domain').item.json.extracted_ip }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -368,
+        -368
+      ],
+      "id": "7bf4270d-368b-40d8-8275-8331e51e4867",
+      "name": "Blocked IP",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "AupywgZK1CctfV3S",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://192.168.1.100/api/firewall/alias/reconfigure/blocked_ips",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -160,
+        -336
+      ],
+      "id": "c5b11d19-2286-44b8-97dc-ae6386ecceb7",
+      "name": "Update configure IP",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "AupywgZK1CctfV3S",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://192.168.1.100/api/unbound/service/reconfigure",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -256,
+        96
+      ],
+      "id": "3095869e-334a-4842-a3cf-ea166afd8b93",
+      "name": "Update configure domain",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "AupywgZK1CctfV3S",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "U0B5SS5GMFC",
+          "mode": "list",
+          "cachedResultName": "chonglevan2004"
+        },
+        "text": "=🚨 Block Malicous Domain 🚨\n🖥️ Target Details:\n    - Timestamp: {{ $('Webhook').item.json.body.timestamp }}\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID: {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP: {{ $('Webhook').item.json.body.agent_ip }}  \n🛡️ Action Taken:\n    Kill connection\n    Map malicious to 127.0.0.1 (Attacker): {{ $('Extract IP/Domain').item.json.extracted_domain }}\n    Status: Executed successfully.",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        -48,
+        96
+      ],
+      "id": "a48a7a93-41d0-4db9-9bc5-b83201915295",
+      "name": "Send a message reported successfully1",
+      "webhookId": "2b13bd11-75cd-4207-bf09-4275039aaf58",
+      "notesInFlow": true,
+      "credentials": {
+        "slackApi": {
+          "id": "SoKR6OYDbARyguhq",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "U0B5SS5GMFC",
+          "mode": "list",
+          "cachedResultName": "chonglevan2004"
+        },
+        "text": "=🚨 Block Malicous IP 🚨\n🖥️ Target Details:\n    - Timestamp: {{ $('Webhook').item.json.body.timestamp }}\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID: {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP: {{ $('Webhook').item.json.body.agent_ip }}  \n🛡️ Action Taken:\n    Kill connection\n    Block IP (Attacker): {{ $('Extract IP/Domain').item.json.extracted_ip }}\n    Status: Executed successfully.",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        16,
+        -336
+      ],
+      "id": "336cd440-0a15-4f52-a8d9-f37a206dd7f0",
+      "name": "Send a message reported successfully2",
+      "webhookId": "2b13bd11-75cd-4207-bf09-4275039aaf58",
+      "notesInFlow": true,
+      "credentials": {
+        "slackApi": {
+          "id": "SoKR6OYDbARyguhq",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "value": "U0B5SS5GMFC",
+          "mode": "list",
+          "cachedResultName": "chonglevan2004"
+        },
+        "text": "=🚨 Report Malicous IP 🚨\n🖥️ Target Details:\n    - Timestamp: {{ $('Webhook').item.json.body.timestamp }}\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID: {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP: {{ $('Webhook').item.json.body.agent_ip }}  \n🛡️ Action Taken:\n    Reported IP (Attacker): {{ $('Extract IP/Domain').item.json.extracted_ip }}\n    Status: Executed failed.",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        -560,
+        -80
+      ],
+      "id": "2b8f4261-e38b-4417-b31c-a477b42b2544",
+      "name": "Send a message reported failed",
+      "webhookId": "2b13bd11-75cd-4207-bf09-4275039aaf58",
+      "notesInFlow": true,
+      "credentials": {
+        "slackApi": {
+          "id": "SoKR6OYDbARyguhq",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "obtain a JWT token in order to run any endpoint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check AbuseIPDB": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Extract IP/Domain": {
+      "main": [
+        [
+          {
+            "node": "IP/ Domain null",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Domain": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Blocked IP",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report IP",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Blocked IP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "obtain a JWT token in order to run any endpoint": {
+      "main": [
+        [
+          {
+            "node": "kill connection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Add host override",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add host override",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add host override",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add host override",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "kill connection": {
+      "main": [
+        [
+          {
+            "node": "Extract IP/Domain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IP/ Domain null": {
+      "main": [
+        [
+          {
+            "node": "Check AbuseIPDB",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Domain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report IP": {
+      "main": [
+        [
+          {
+            "node": "Send a message reported successfully",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message reported failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add host override": {
+      "main": [
+        [
+          {
+            "node": "Update configure domain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Blocked IP": {
+      "main": [
+        [
+          {
+            "node": "Update configure IP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update configure IP": {
+      "main": [
+        [
+          {
+            "node": "Send a message reported successfully2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update configure domain": {
+      "main": [
+        [
+          {
+            "node": "Send a message reported successfully1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message reported successfully": {
+      "main": [
+        [
+          {
+            "node": "Blocked IP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message reported failed": {
+      "main": [
+        [
+          {
+            "node": "Blocked IP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a8feac6c-759d-43ae-899a-7a59cc9e9df0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e88a23548c008081d07deacd3ca2d9cc4b8fdf8979a7f8fb7bbb7ddbfcf1d253"
+  },
+  "id": "uf28jxVQYVj5XqAG",
+  "tags": []
+}

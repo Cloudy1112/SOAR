@@ -20,12 +20,133 @@
   BRUTE FORCE ATTACKS - MITRE T1110
 -->
 <group name="local,brute_force,mitre_attack,t1110">
-  <rule id="100500" level="12" frequency="10" timeframe="120">
+  <rule id="100600" level="12" frequency="10" timeframe="120">
     <if_matched_sid>5758</if_matched_sid>
     <same_srcip />
     <description>SSH Bruteforce confirmed from same IP</description>
     <mitre>
       <id>T1110.001</id>
+    </mitre>
+  </rule>
+
+</group>
+
+<group name="opnsense">
+  <rule id="100010" level="5">
+    <decoded_as>solaris_bsm</decoded_as>
+    <description>OPNsense syslog messages</description>
+  </rule>
+
+  <rule id="100011" level="5">
+    <decoded_as>opn-filter</decoded_as>
+    <description>OPNsense syslog messages</description>
+  </rule>
+
+  <rule id="100012" level="5">
+    <decoded_as>opn-config</decoded_as>
+    <description>OPNsense syslog messages</description>
+  </rule>
+
+  <rule id="100013" level="5">
+    <decoded_as>opn-audit</decoded_as>
+    <description>OPNsense syslog messages</description>
+  </rule>
+
+</group>
+
+
+<group name="windows, sysmon, vssadmin_monitor">
+  <rule id="100080" level="7">
+    <if_group>sysmon_event1</if_group> <!-- ID gốc xử lý sự kiện Sysmon Event ID 1 (Process Creation) -->
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)vssadmin|wmic|shadowcopy|shadowstorage</field>
+    <description>Executed command in cmdline: $(win.eventdata.commandLine)</description>
+    <options>no_full_log</options>
+  </rule>
+
+  <rule id="100090" level="0">
+    <decoded_as>json</decoded_as>
+    <field name="win.system.eventID">^4688$</field>
+    <description> Log Windows Event ID 4688 from decoder JSON.</description>
+  </rule>
+
+  <rule id="100091" level="12">
+    <if_sid>100090</if_sid>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)vssadmin|wmic|shadowcopy|shadowstorage</field>
+    <description>Executed command in cmdline: $(win.eventdata.commandLine)</description>
+    <mitre>
+      <id>T1490</id> <!-- Kỹ thuật Inhibit System Recovery của MITRE ATT&CK -->
+    </mitre>
+    <group>vss_deletion,ransomware_behavior,</group>
+  </rule>
+
+</group>
+
+<!-- WEB SHELL DETECTION -->
+<group name="linux, webshell, windows,">
+  <!-- This rule detects file creation. -->
+  <rule id="100500" level="12">
+    <if_sid>554</if_sid>
+    <field name="file" type="pcre2">(?i).php$|.phtml$|.php3$|.php4$|.php5$|.phps$|.phar$|.asp$|.aspx$|.jsp$|.cshtml$|.vbhtml$</field>
+    <description>[File creation]: Possible web shell scripting file ($(file)) created</description>
+    <mitre>
+      <id>T1105</id>
+      <id>T1505</id>
+    </mitre>
+  </rule>
+  
+  <!-- This rule detects file modification. -->
+  <rule id="100501" level="12">
+    <if_sid>550</if_sid>
+    <field name="file" type="pcre2">(?i).php$|.phtml$|.php3$|.php4$|.php5$|.phps$|.phar$|.asp$|.aspx$|.jsp$|.cshtml$|.vbhtml$</field>
+    <description>[File modification]: Possible web shell content added in $(file)</description>
+    <mitre>
+      <id>T1105</id>
+      <id>T1505</id>
+    </mitre>
+  </rule>
+
+  <!-- This rule detects files modified with PHP web shell signatures. -->
+  <rule id="100502" level="15">
+    <if_sid>100501</if_sid>
+    <field name="changed_content" type="pcre2">(?i)passthru|exec|eval|shell_exec|assert|str_rot13|system|phpinfo|base64_decode|chmod|mkdir|fopen|fclose|readfile|show_source|proc_open|pcntl_exec|execute|WScript.Shell|WScript.Network|FileSystemObject|Adodb.stream</field>
+    <description>[File Modification]: File $(file) contains a web shell</description>
+    <mitre>
+      <id>T1105</id>
+      <id>T1505.003</id>
+    </mitre>
+  </rule>
+</group>
+
+<!-- This rule detects network connections from scripts. -->
+<group name="linux, webshell,">
+  <rule id="100510" level="12">
+    <decoded_as>ossec</decoded_as>
+    <match>ossec: output: 'webshell connections'</match>
+    <description>[Network connection]: Script attempting network connection on source port: $(local_port) and destination port: $(foreign_port)</description>
+    <mitre>
+      <id>TA0011</id>
+      <id>T1049</id>
+      <id>T1505.003</id>
+    </mitre>
+  </rule>
+
+  <rule id="100520" level="12">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">webshell_command_exec</field>
+    <description>Webshell Executed System Command via Web Server (User: www-data)</description>
+    <mitre>
+      <id>T1505.003</id>
+      <id>T1059.004</id>
+    </mitre>
+  </rule>
+
+  <rule id="100521" level="12">
+    <if_sid>80700</if_sid>
+    <field name="audit.key">webshell_net_connect</field>
+    <description>Webshell Initiated Outbound Network Connection (Reverse Shell)</description>
+    <mitre>
+      <id>TA0011</id>
+      <id>T1049</id>
     </mitre>
   </rule>
 

@@ -31,27 +31,58 @@
 
 </group>
 
-<group name="opnsense">
-  <rule id="100010" level="5">
-    <decoded_as>solaris_bsm</decoded_as>
-    <description>OPNsense syslog messages</description>
+<group name="windows_persistence,">
+  <!-- .001 Registry Run Keys và RunOnce -->
+  <rule id="100010" level="10">
+    <if_group>sysmon_event13</if_group>
+    <field name="win.eventdata.TargetObject" type="pcre2">(?i)^HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\(Run|RunOnce|RunOnceEx)|^HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\(Run|RunOnce)</field>
+    <description>Detected Registry run key Registry Run/RunOnce: $(win.eventdata.Image) has changed $(win.eventdata.TargetObject) into $(win.eventdata.Details)</description>
   </rule>
 
-  <rule id="100011" level="5">
-    <decoded_as>opn-filter</decoded_as>
-    <description>OPNsense syslog messages</description>
+  <!-- .004 Winlogon Helper DLL -->
+  <rule id="100011" level="12">
+    <if_group>sysmon_event13</if_group>
+    <field name="win.eventdata.TargetObject" type="pcre2">(?i)^HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\(Shell|Userinit|AppSetup|Notify|GinaDLL)</field>
+    <description>Detected Winlogon Helper Registry change for persistence: $(win.eventdata.Image)</description>
   </rule>
 
-  <rule id="100012" level="5">
-    <decoded_as>opn-config</decoded_as>
-    <description>OPNsense syslog messages</description>
+  <!-- .005 Security Support Provider (SSP) & .002 Authentication Package -->
+  <rule id="100012" level="12">
+    <if_group>sysmon_event13</if_group>
+    <field name="win.eventdata.TargetObject" type="pcre2">(?i)^HKLM\\System\\CurrentControlSet\\Control\\Lsa\\(Security Packages|Authentication Packages|Notification Packages)</field>
+    <description>Detected LSA Security/Authentication Packages (SSP) change: $(win.eventdata.Image)</description>
   </rule>
 
-  <rule id="100013" level="5">
-    <decoded_as>opn-audit</decoded_as>
-    <description>OPNsense syslog messages</description>
+  <!-- .014 Active Setup -->
+  <rule id="100013" level="10">
+    <if_group>sysmon_event13</if_group>
+    <field name="win.eventdata.TargetObject" type="pcre2">(?i)^HKLM\\Software\\Microsoft\\Active Setup\\Installed Components\\.+\\StubPath</field>
+    <description>Detected Active Setup StubPath change for persistence: $(win.eventdata.Image)</description>
   </rule>
 
+  <!-- .003 Time Providers -->
+  <rule id="100014" level="11">
+    <if_group>sysmon_event13</if_group>
+    <field name="win.eventdata.TargetObject" type="pcre2">(?i)^HKLM\\System\\CurrentControlSet\\Services\\W32Time\\TimeProviders\\.+\\(DllName|Config)</field>
+    <description>Detected changes in Windows Time Provider (Persistence): $(win.eventdata.Image)</description>
+  </rule>
+
+</group>
+
+<group name="windows_startup_files,">
+  <!-- .001 Startup Folder - Tạo file trong thư mục Startup -->
+  <rule id="100020" level="7">
+    <if_group>sysmon_event11</if_group>
+    <field name="win.eventdata.TargetFilename" type="pcre2">(?i)C:\\\\Users\\\\.+\\\\AppData\\\\Roaming\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup\\\\.+\.(lnk|exe|bat|vbs|ps1)|(?i)C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup\\\\.+\.(lnk|exe|bat|vbs|ps1)</field>
+    <description>Detected file creation in Startup folder (Persistence): $(win.eventdata.Image) created $(win.eventdata.TargetFilename)</description>
+  </rule>
+
+  <!-- .010 Port Monitors và .012 Print Processors -->
+  <rule id="100030" level="11">
+    <if_group>sysmon_event13</if_group>
+    <field name="win.eventdata.TargetObject" type="pcre2">(?i)^HKLM\\System\\CurrentControlSet\\Control\\Print\\Monitors\\.+\\Driver|^HKLM\\System\\CurrentControlSet\\Control\\Print\\Environments\\\\.+\\Print Processors\\.+\\Driver</field>
+    <description>Detected installation of malicious Port Monitor or Print Processor (Persistence): $(win.eventdata.Image)</description>
+  </rule>
 </group>
 
 
@@ -84,7 +115,7 @@
 <!-- WEB SHELL DETECTION -->
 <group name="linux, webshell, windows,">
   <!-- This rule detects file creation. -->
-  <rule id="100500" level="12">
+  <rule id="100700" level="12">
     <if_sid>554</if_sid>
     <field name="file" type="pcre2">(?i).php$|.phtml$|.php3$|.php4$|.php5$|.phps$|.phar$|.asp$|.aspx$|.jsp$|.cshtml$|.vbhtml$</field>
     <description>[File creation]: Possible web shell scripting file ($(file)) created</description>
@@ -95,7 +126,7 @@
   </rule>
   
   <!-- This rule detects file modification. -->
-  <rule id="100501" level="12">
+  <rule id="100701" level="12">
     <if_sid>550</if_sid>
     <field name="file" type="pcre2">(?i).php$|.phtml$|.php3$|.php4$|.php5$|.phps$|.phar$|.asp$|.aspx$|.jsp$|.cshtml$|.vbhtml$</field>
     <description>[File modification]: Possible web shell content added in $(file)</description>
@@ -106,8 +137,8 @@
   </rule>
 
   <!-- This rule detects files modified with PHP web shell signatures. -->
-  <rule id="100502" level="15">
-    <if_sid>100501</if_sid>
+  <rule id="100702" level="15">
+    <if_sid>100701</if_sid>
     <field name="changed_content" type="pcre2">(?i)passthru|exec|eval|shell_exec|assert|str_rot13|system|phpinfo|base64_decode|chmod|mkdir|fopen|fclose|readfile|show_source|proc_open|pcntl_exec|execute|WScript.Shell|WScript.Network|FileSystemObject|Adodb.stream</field>
     <description>[File Modification]: File $(file) contains a web shell</description>
     <mitre>
@@ -119,7 +150,7 @@
 
 <!-- This rule detects network connections from scripts. -->
 <group name="linux, webshell,">
-  <rule id="100510" level="12">
+  <rule id="100710" level="12">
     <decoded_as>ossec</decoded_as>
     <match>ossec: output: 'webshell connections'</match>
     <description>[Network connection]: Script attempting network connection on source port: $(local_port) and destination port: $(foreign_port)</description>
@@ -130,7 +161,7 @@
     </mitre>
   </rule>
 
-  <rule id="100520" level="12">
+  <rule id="100720" level="12">
     <if_sid>80700</if_sid>
     <field name="audit.key">webshell_command_exec</field>
     <description>Webshell Executed System Command via Web Server (User: www-data)</description>
@@ -140,7 +171,7 @@
     </mitre>
   </rule>
 
-  <rule id="100521" level="12">
+  <rule id="100721" level="12">
     <if_sid>80700</if_sid>
     <field name="audit.key">webshell_net_connect</field>
     <description>Webshell Initiated Outbound Network Connection (Reverse Shell)</description>

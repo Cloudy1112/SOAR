@@ -514,8 +514,7 @@
         "user": {
           "__rl": true,
           "value": "U0B5SS5GMFC",
-          "mode": "list",
-          "cachedResultName": "chonglevan2004"
+          "mode": "list"
         },
         "text": "=🚨 Report Malicous IP 🚨\n🖥️ Target Details:\n    - Timestamp: {{ $('Webhook').item.json.body.timestamp }}\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID: {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP: {{ $('Webhook').item.json.body.agent_ip }}  \n🛡️ Action Taken:\n    Reported IP (Attacker): {{ $('Extract IP/Domain').item.json.extracted_ip }}\n    Status: Executed successfully.",
         "otherOptions": {}
@@ -673,8 +672,7 @@
         "user": {
           "__rl": true,
           "value": "U0B5SS5GMFC",
-          "mode": "list",
-          "cachedResultName": "chonglevan2004"
+          "mode": "list"
         },
         "text": "=🚨 Block Malicous Domain 🚨\n🖥️ Target Details:\n    - Timestamp: {{ $('Webhook').item.json.body.timestamp }}\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID: {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP: {{ $('Webhook').item.json.body.agent_ip }}  \n🛡️ Action Taken:\n    Kill connection\n    Map malicious to 127.0.0.1 (Attacker): {{ $('Extract IP/Domain').item.json.extracted_domain }}\n    Status: Executed successfully.",
         "otherOptions": {}
@@ -702,8 +700,7 @@
         "user": {
           "__rl": true,
           "value": "U0B5SS5GMFC",
-          "mode": "list",
-          "cachedResultName": "chonglevan2004"
+          "mode": "list"
         },
         "text": "=🚨 Block Malicous IP 🚨\n🖥️ Target Details:\n    - Timestamp: {{ $('Webhook').item.json.body.timestamp }}\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID: {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP: {{ $('Webhook').item.json.body.agent_ip }}  \n🛡️ Action Taken:\n    Kill connection\n    Block IP (Attacker): {{ $('Extract IP/Domain').item.json.extracted_ip }}\n    Status: Executed successfully.",
         "otherOptions": {}
@@ -731,8 +728,7 @@
         "user": {
           "__rl": true,
           "value": "U0B5SS5GMFC",
-          "mode": "list",
-          "cachedResultName": "chonglevan2004"
+          "mode": "list"
         },
         "text": "=🚨 Report Malicous IP 🚨\n🖥️ Target Details:\n    - Timestamp: {{ $('Webhook').item.json.body.timestamp }}\n    - Agent Name: {{ $('Webhook').item.json.body.agent_name }}\n    - Agent ID: {{ $('Webhook').item.json.body.agent_id }}\n    - Agent IP: {{ $('Webhook').item.json.body.agent_ip }}  \n🛡️ Action Taken:\n    Reported IP (Attacker): {{ $('Extract IP/Domain').item.json.extracted_ip }}\n    Status: Executed failed.",
         "otherOptions": {}

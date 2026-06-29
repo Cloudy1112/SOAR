@@ -52,8 +52,8 @@ services:
       - ./config/wazuh_integrations/custom-n8n-webshell.py:/wazuh-config-mount/integrations/custom-n8n-webshell.py # <-- Mount file custom-n8n-webshell.py from host into container
       - ./config/wazuh_integrations/custom-n8n.py:/wazuh-config-mount/integrations/custom-n8n.py # <-- Mount file custom-n8n.py from host into container
       - ./config/wazuh_etc/agent.conf:/wazuh-config-mount/etc/shared/default/agent.conf # <-- Mount file agent.conf from host into container
-      - ./config/wazuh_etc/windows/agent.conf:/wazuh-config-mount/etc/shared/default/windows/agent.conf
-      - ./config/wazuh_etc/linux/agent.conf:/wazuh-config-mount/etc/shared/default/linux/agent.conf
+      - ./config/wazuh_etc/windows-agent/agent.conf:/wazuh-config-mount/etc/shared/default/windows/agent.conf
+      - ./config/wazuh_etc/linux-agent/agent.conf:/wazuh-config-mount/etc/shared/default/linux/agent.conf
       - ./config/wazuh_etc/opn_config.xml:/wazuh-config-mount/etc/decoders/opn_config.xml
       - ./config/wazuh_etc/opn_audit.xml:/wazuh-config-mount/etc/decoders/opn_audit.xml
       - ./config/wazuh_etc/opn_filter.xml:/wazuh-config-mount/etc/decoders/opn_filter.xml

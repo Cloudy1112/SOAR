@@ -1,0 +1,9 @@
+# Playbook 5 - Audit rule giam sat thu muc du lieu nhay cam (Ubuntu Agent)
+# Vi tri: /etc/audit/rules.d/sensitive_data.rules
+# Sau khi tao: sudo augenrules --load  &&  sudo auditctl -l
+#
+# -w  : watch path
+# -p war : giam sat write (w), attribute change (a), read (r)
+# -k  : dat audit key = sensitive_data (rule Wazuh 100500 match key nay)
+
+-w /home/quien/Sensitive_Data -p war -k sensitive_data

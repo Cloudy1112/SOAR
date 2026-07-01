@@ -1,0 +1,323 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wazuh-alert",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -928,
+        -16
+      ],
+      "id": "10879589-a3be-458e-a26f-7b18e575f74b",
+      "name": "Webhook",
+      "webhookId": "89e6a5d8-7bca-49ee-a54c-fc1238e35de5"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9e0db6e5-5926-42a9-86a8-9ca8feb8207f",
+              "leftValue": "={{$json.body.rule.id}}",
+              "rightValue": "60154",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -704,
+        -16
+      ],
+      "id": "c8439e1d-58d1-4273-a631-e105590f0d6e",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "8928212956",
+        "text": "=⚠️ Privilege Escalation Alert\n\nAgent: {{$json.body.agent.name}}\nUser thực hiện: {{$json.body.data.win.eventdata.subjectUserName}}\nTarget User: {{$json.body.data.win.eventdata.targetUserName}}\nMember Name: {{$json.body.data.win.eventdata.memberName}}\nMember SID: {{$json.body.data.win.eventdata.memberSid}}\nGroup: {{$json.body.data.win.eventdata.targetUserName}}\nRule ID: {{ $('Webhook').item.json.body.rule.id }}\nRule: {{$json.body.rule.description}}\nLevel: {{$json.body.rule.level}}\nEvent ID: {{$json.body.data.win.system.eventID}}\nDescription:{{ $json.body.data.win.system.message }}\nTime: {{$json.body.timestamp}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -496,
+        -112
+      ],
+      "id": "c2526962-fb46-44b0-b4e8-d512cd28a0af",
+      "name": "Send a text message",
+      "webhookId": "32b224ba-b059-424a-b515-9d68762b4e83",
+      "credentials": {
+        "telegramApi": {
+          "id": "BcSBhf72msBepYR4",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "Privilege Escalation Approval",
+        "formDescription": "User vừa được thêm vào Administrators.\n\nApprove remediation?",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Decision",
+              "fieldType": "radio",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Approve"
+                  },
+                  {
+                    "option": "Reject"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -80,
+        -112
+      ],
+      "id": "176cc14d-bde7-4e47-a094-9e24a65d6357",
+      "name": "Wait",
+      "webhookId": "8ccb165f-8b95-4423-b9dc-b2547be3177c"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6c382fd6-2809-4359-8fc8-a46f073639ce",
+              "leftValue": "={{ $json.Decision }}",
+              "rightValue": "Approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        80,
+        -96
+      ],
+      "id": "a65a049e-7136-4aaf-bbb4-ca6dcb1818ad",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "command": "=for /f \"skip=1 tokens=1\" %u in ('wmic useraccount where sid^=\"{{ $('Code in JavaScript').item.json.memberSid }}\" get name') do net localgroup Administrators %u /delete",
+        "cwd": "="
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        304,
+        -192
+      ],
+      "id": "e19d4c3a-a833-43a8-9eb4-c07b58561d05",
+      "name": "Execute a command",
+      "credentials": {
+        "sshPassword": {
+          "id": "dpBspl0xucUEicS0",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "8928212956",
+        "text": "=⚠️ Incident Review Completed  \nDecision: Rejected  \nNo remediation action was executed.\nStatus: Closed by Administrator",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        384,
+        0
+      ],
+      "id": "bee07aa9-70db-426b-8d1d-a6b1a25c7426",
+      "name": "Send a text message1",
+      "webhookId": "f7656c06-cc9a-42ba-add1-5e3c44ff7a24",
+      "credentials": {
+        "telegramApi": {
+          "id": "BcSBhf72msBepYR4",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "8928212956",
+        "text": "=✅ Incident Resolved\n\nHost: {{ $('Webhook').item.json.agent.name }}\n\nRule ID: {{ $('Webhook').item.json.rule.id }}\n\nAction Taken:\nRemoved user from Administrators group\n\nExecuted by:\nSOAR Playbook via SSH\n\nStatus: Closed",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        -256
+      ],
+      "id": "ce440ce0-35c6-48c0-87ac-bc011be2823e",
+      "name": "Send a text message2",
+      "webhookId": "00128848-c498-4f8f-862e-b3bc6e5d17bd",
+      "credentials": {
+        "telegramApi": {
+          "id": "BcSBhf72msBepYR4",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const webhookData =\n  $('Webhook').item.json.body ??\n  $('Webhook').item.json;\n\nreturn {\n  memberSid: webhookData.data.win.eventdata.memberSid,\n  ruleId: webhookData.rule.id,\n  host: webhookData.agent.name\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -288,
+        -112
+      ],
+      "id": "d40bd51b-f564-40c0-87a4-17395eb4fa5a",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Execute a command",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a command": {
+      "main": [
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a685d42a-5aea-4be2-be26-a9a9911f4a7b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f90da41786ff159b19092edc3a2d48d9b9d81b248e4d752096cbfe88838ea36a"
+  },
+  "id": "3cQnru0XtAcdiBWx",
+  "tags": []
+}

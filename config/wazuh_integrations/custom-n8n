@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+# Playbook 5 - Wazuh integration script
+# Vi tri: /var/ossec/integrations/custom-n8n  (file KHONG co duoi .py - day la file Wazuh thuc thi)
+# Quyen: chmod 750, chown root:wazuh
+#
+# Chuc nang: nhan alert tu Wazuh, route theo rule_id toi dung webhook n8n.
+#   - rule 100520 / 100530  -> webhook /data-leak  (Playbook 5)
+#   - cac rule khac         -> webhook /wazuh-alert (Playbook 1)
+
+import sys
+import json
+import urllib.request
+
+alert_file = sys.argv[1]
+
+with open(alert_file, "r") as f:
+    alert = json.load(f)
+
+rule_id = str(alert.get("rule", {}).get("id", ""))
+
+# Routing theo rule_id
+if rule_id in ("100520", "100530"):
+    path = "data-leak"        # Playbook 5
+else:
+    path = "wazuh-alert"      # Playbook 1 (giu nguyen)
+
+# Production webhook (workflow da Publish). Khi test/dung thi doi thanh webhook-test.
+url = f"http://n8n:5678/webhook/{path}"
+
+data = json.dumps(alert).encode("utf-8")
+req = urllib.request.Request(
+    url,
+    data=data,
+    headers={"Content-Type": "application/json"},
+    method="POST"
+)
+
+try:
+    urllib.request.urlopen(req, timeout=5)
+except Exception as e:
+    with open("/var/ossec/logs/integrations.log", "a") as log:
+        log.write(f"custom-n8n error: {e}\n")

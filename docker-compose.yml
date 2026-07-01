@@ -48,17 +48,13 @@ services:
       - ./config/wazuh_etc/local_rules.xml:/wazuh-config-mount/etc/rules/local_rules.xml # <-- Mount file config rules from host into container
       - ./config/wazuh_cluster/wazuh_manager.conf:/wazuh-config-mount/etc/ossec.conf # <-- Mount file ossec.conf cluster from host into container
       - ./config/wazuh_integrations/custom-n8n-brute-force.py:/wazuh-config-mount/integrations/custom-n8n-brute-force.py # <-- Mount file custom-n8n.py from host into container
-      - ./config/wazuh_integrations/custom-n8n-ransomware.py:/wazuh-config-mount/integrations/custom-n8n-ransomware.py # <-- Mount file custom-n8n-ransomware.py from host into container
       - ./config/wazuh_integrations/custom-n8n-webshell.py:/wazuh-config-mount/integrations/custom-n8n-webshell.py # <-- Mount file custom-n8n-webshell.py from host into container
-      - ./config/wazuh_integrations/custom-n8n.py:/wazuh-config-mount/integrations/custom-n8n.py # <-- Mount file custom-n8n.py from host into container
-      - ./config/wazuh_etc/agent.conf:/wazuh-config-mount/etc/shared/default/agent.conf # <-- Mount file agent.conf from host into container
+      - ./config/wazuh_integrations/custom-n8n-routing.py:/wazuh-config-mount/integrations/custom-n8n-routing.py # <-- Mount file custom-n8n-routing.py from host into container
+      - ./config/wazuh_integrations/custom-n8n:/wazuh-config-mount/integrations/custom-n8n # <-- Mount file custom-n8n-ransomware.py from host into container
+      - ./config/wazuh_etc/agent.conf:/wazuh-config-mount/etc/shared/default/agent.conf 
       - ./config/wazuh_etc/windows-agent/agent.conf:/wazuh-config-mount/etc/shared/default/windows/agent.conf
       - ./config/wazuh_etc/linux-agent/agent.conf:/wazuh-config-mount/etc/shared/default/linux/agent.conf
-      - ./config/wazuh_etc/opn_config.xml:/wazuh-config-mount/etc/decoders/opn_config.xml
-      - ./config/wazuh_etc/opn_audit.xml:/wazuh-config-mount/etc/decoders/opn_audit.xml
-      - ./config/wazuh_etc/opn_filter.xml:/wazuh-config-mount/etc/decoders/opn_filter.xml
       - ./config/wazuh_etc/local_decoder.xml:/wazuh-config-mount/etc/decoders/local_decoder.xml
-      - ./shared_logs:/shared_logs # <-- Mount log chung
     networks:
       - soar_network # <-- internal network
 

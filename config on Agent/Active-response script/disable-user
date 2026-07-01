@@ -1,0 +1,35 @@
+#!/bin/bash
+# Playbook 6 - Active Response: khoa tai khoan nguoi dung (Ubuntu Agent)
+# Vi tri: /var/ossec/active-response/bin/disable-user
+#   LUU Y: ten file phai TRUNG ten <command> trong ossec.conf (Wazuh 4.2+)
+# Quyen:  sudo chmod 750 /var/ossec/active-response/bin/disable-user
+#         sudo chown root:wazuh /var/ossec/active-response/bin/disable-user
+#
+# Cach hoat dong: n8n goi Wazuh API kem "arguments":["<username>"],
+# Wazuh truyen vao script qua stdin duoi dang JSON co truong "extra_args".
+# Script trich username va khoa dung tai khoan do (khoa dong, khong hardcode).
+
+LOG="/var/ossec/logs/active-responses.log"
+
+read INPUT
+echo "$(date) disable-user triggered: $INPUT" >> "$LOG"
+
+# Trich username tu extra_args (xu ly ca khoang trang quanh dau :)
+USERNAME=$(echo "$INPUT" | grep -oP '"extra_args"\s*:\s*\["\K[^"]+' | head -1)
+
+# Whitelist: KHONG khoa root va tai khoan quan tri (quien) - tranh khoa nham nguoi van hanh
+if [ -n "$USERNAME" ] \
+   && [ "$USERNAME" != "root" ] \
+   && [ "$USERNAME" != "quien" ] \
+   && [ "$USERNAME" != "unknown" ]; then
+  usermod -L "$USERNAME" 2>>"$LOG"
+  echo "$(date) disable-user: locked $USERNAME" >> "$LOG"
+else
+  echo "$(date) disable-user: skipped (protected/empty user=$USERNAME)" >> "$LOG"
+fi
+
+exit 0
+
+# --- Ghi chu ---
+# Mo khoa lai user: sudo usermod -U <username>
+# Kiem tra trang thai: sudo passwd -S <username>   (L=locked, P=binh thuong)

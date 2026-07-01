@@ -32,57 +32,57 @@
 </group>
 
 <group name="windows_persistence,">
-  <!-- .001 Registry Run Keys và RunOnce -->
+
+  <!-- Rule cho Registry Run Keys (Event 13 - SetValue) -->
   <rule id="100010" level="10">
-    <if_group>sysmon_event13</if_group>
-    <field name="win.eventdata.TargetObject" type="pcre2">(?i)^HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\(Run|RunOnce|RunOnceEx)|^HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\(Run|RunOnce)</field>
-    <description>Detected Registry run key Registry Run/RunOnce: $(win.eventdata.Image) has changed $(win.eventdata.TargetObject) into $(win.eventdata.Details)</description>
+    <if_sid>61610</if_sid> <!-- Sysmon Event 13 base -->
+    <field name="win.eventdata.TargetObject" type="pcre2">(?i)CurrentVersion\\(Run|RunOnce|RunOnceEx)</field>
+    <description>Phát hiện giá trị Registry Run/RunOnce được thay đổi bởi $(win.eventdata.Image)</description>
   </rule>
 
-  <!-- .004 Winlogon Helper DLL -->
+  <!-- Rule cho Winlogon Helper DLL (Event 13) -->
   <rule id="100011" level="12">
-    <if_group>sysmon_event13</if_group>
-    <field name="win.eventdata.TargetObject" type="pcre2">(?i)^HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\(Shell|Userinit|AppSetup|Notify|GinaDLL)</field>
-    <description>Detected Winlogon Helper Registry change for persistence: $(win.eventdata.Image)</description>
+    <if_sid>61610</if_sid>
+    <field name="win.eventdata.TargetObject" type="pcre2">(?i)Winlogon\\(Shell|Userinit|Notify|GinaDLL)</field>
+    <description>Phát hiện thay đổi Winlogon Helper Registry bởi $(win.eventdata.Image)</description>
   </rule>
 
-  <!-- .005 Security Support Provider (SSP) & .002 Authentication Package -->
+  <!-- Rule cho LSA / SSP / Authentication Package (Event 13) -->
   <rule id="100012" level="12">
-    <if_group>sysmon_event13</if_group>
-    <field name="win.eventdata.TargetObject" type="pcre2">(?i)^HKLM\\System\\CurrentControlSet\\Control\\Lsa\\(Security Packages|Authentication Packages|Notification Packages)</field>
-    <description>Detected LSA Security/Authentication Packages (SSP) change: $(win.eventdata.Image)</description>
+    <if_sid>61610</if_sid>
+    <field name="win.eventdata.TargetObject" type="pcre2">(?i)Control\\Lsa\\(Security Packages|Authentication Packages|Notification Packages)</field>
+    <description>Phát hiện thay đổi LSA Security/Authentication Packages bởi $(win.eventdata.Image)</description>
   </rule>
 
-  <!-- .014 Active Setup -->
+  <!-- Rule cho Active Setup (Event 13) -->
   <rule id="100013" level="10">
-    <if_group>sysmon_event13</if_group>
-    <field name="win.eventdata.TargetObject" type="pcre2">(?i)^HKLM\\Software\\Microsoft\\Active Setup\\Installed Components\\.+\\StubPath</field>
-    <description>Detected Active Setup StubPath change for persistence: $(win.eventdata.Image)</description>
+    <if_sid>61610</if_sid>
+    <field name="win.eventdata.TargetObject" type="pcre2">(?i)Active Setup\\Installed Components\\.+\\StubPath</field>
+    <description>Phát hiện thay đổi Active Setup StubPath bởi $(win.eventdata.Image)</description>
   </rule>
 
-  <!-- .003 Time Providers -->
+  <!-- Rule cho Time Providers (Event 13) -->
   <rule id="100014" level="11">
-    <if_group>sysmon_event13</if_group>
-    <field name="win.eventdata.TargetObject" type="pcre2">(?i)^HKLM\\System\\CurrentControlSet\\Services\\W32Time\\TimeProviders\\.+\\(DllName|Config)</field>
-    <description>Detected changes in Windows Time Provider (Persistence): $(win.eventdata.Image)</description>
+    <if_sid>61610</if_sid>
+    <field name="win.eventdata.TargetObject" type="pcre2">(?i)Services\\W32Time\\TimeProviders\\.+\\DllName</field>
+    <description>Phát hiện thay đổi Windows Time Provider bởi $(win.eventdata.Image)</description>
   </rule>
 
-</group>
-
-<group name="windows_startup_files,">
-  <!-- .001 Startup Folder - Tạo file trong thư mục Startup -->
-  <rule id="100020" level="7">
-    <if_group>sysmon_event11</if_group>
-    <field name="win.eventdata.TargetFilename" type="pcre2">(?i)C:\\\\Users\\\\.+\\\\AppData\\\\Roaming\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup\\\\.+\.(lnk|exe|bat|vbs|ps1)|(?i)C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup\\\\.+\.(lnk|exe|bat|vbs|ps1)</field>
-    <description>Detected file creation in Startup folder (Persistence): $(win.eventdata.Image) created $(win.eventdata.TargetFilename)</description>
-  </rule>
-
-  <!-- .010 Port Monitors và .012 Print Processors -->
+  <!-- Rule cho Print Monitors / Processors (Event 13) -->
   <rule id="100030" level="11">
-    <if_group>sysmon_event13</if_group>
-    <field name="win.eventdata.TargetObject" type="pcre2">(?i)^HKLM\\System\\CurrentControlSet\\Control\\Print\\Monitors\\.+\\Driver|^HKLM\\System\\CurrentControlSet\\Control\\Print\\Environments\\\\.+\\Print Processors\\.+\\Driver</field>
-    <description>Detected installation of malicious Port Monitor or Print Processor (Persistence): $(win.eventdata.Image)</description>
+    <if_sid>61610</if_sid>
+    <field name="win.eventdata.TargetObject" type="pcre2">(?i)Control\\Print\\(Monitors|Environments)</field>
+    <description>Phát hiện cài đặt Port Monitor hoặc Print Processor bởi $(win.eventdata.Image)</description>
   </rule>
+
+  <!-- Rule cho Startup Folder - tạo file (Event 11 - FileCreate) -->
+  <!-- Rule cha cho Sysmon Event 11 là 61608 -->
+  <rule id="100020" level="7">
+    <if_sid>61608</if_sid> <!-- Sysmon Event 11 base -->
+    <field name="win.eventdata.TargetFilename" type="pcre2">(?i)C:\\\\Users\\\\.+\\\\AppData\\\\Roaming\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup\\\\.+\.(lnk|exe|bat|vbs|ps1)|(?i)C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup\\\\.+\.(lnk|exe|bat|vbs|ps1)</field>
+    <description>Phát hiện file được tạo trong thư mục Startup bởi $(win.eventdata.Image)</description>
+  </rule>
+
 </group>
 
 
